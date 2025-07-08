@@ -19,51 +19,47 @@ Este repositorio contiene la configuración necesaria para desplegar Jenkins en 
 
 1. Crear el namespace e instalar Jenkins con Helm:
 
-```bash
-helm upgrade --install jenkin-local-k3d jenkins/jenkins \
-  -n jenkins --create-namespace \
-  -f jenkins-values.yaml
-Verifica que el pod esté activo:
+    ```bash
+    helm upgrade --install jenkins-local-k3d jenkins/jenkins \
+      -n jenkins --create-namespace \
+      -f jenkins-values.yaml
+    ```
 
-bash
-Copiar
-Editar
-kubectl get pods -n jenkins
-Accede al contenedor y verifica que Docker funcione:
+2. Verifica que el pod esté activo:
 
-bash
-Copiar
-Editar
-kubectl exec -it -n jenkins jenkins-0 -- bash
-docker version
-🔐 Acceso a Jenkins
-El usuario y contraseña por defecto definidos en jenkins-values.yaml son:
+    ```bash
+    kubectl get pods -n jenkins
+    ```
 
-Usuario: admin
+3. Accede al contenedor y verifica que Docker funcione:
 
-Contraseña: admin
+    ```bash
+    kubectl exec -it -n jenkins jenkins-0 -- bash
+    docker version
+    ```
+
+## 🔐 Acceso a Jenkins
+
+El usuario y contraseña por defecto definidos en `jenkins-values.yaml` son:
+
+- **Usuario**: admin
+- **Contraseña**: admin
 
 Recuerda cambiar estas credenciales tras el primer acceso.
 
-📦 Plugins preinstalados
-docker-workflow
+## 📦 Plugins preinstalados
 
-workflow-aggregator
+- docker-workflow
+- workflow-aggregator
+- git
+- credentials
+- credentials-binding
+- blueocean
 
-git
+## 🧪 Modo laboratorio
 
-credentials
-
-credentials-binding
-
-blueocean
-
-🧪 Modo laboratorio
 Este despliegue no usa almacenamiento persistente, ideal para pruebas con K3d o Minikube. Todos los datos se perderán si el pod se elimina.
 
-📜 Licencia
-MIT © [Tu nombre o usuario]
+## 📜 Licencia
 
-yaml
-
----
+MIT © [https://github.com/vhgalvez]
