@@ -1,20 +1,22 @@
 ################################################################################
-# Jenkins – valores para clúster k3d/k3s local
+# Jenkins – valores personalizados para Helm chart oficial
+# Entorno: Clúster local con k3s o k3d (almacenamiento local-path)
 ################################################################################
+
 controller:
   image:
-    # Última LTS estable con JDK 17 (recomendado)
+    # Imagen LTS con soporte para JDK 17 (estable y recomendada)
     tag: "2.440.3-jdk17"
 
   ###########################################################################
-  # Credenciales iniciales                                                  #
+  # Credenciales iniciales (✱ cámbialas en producción)
   ###########################################################################
   admin:
     username: admin
-    password: admin # ➜ cámbialo en producción
+    password: admin
 
   ###########################################################################
-  # Plugins imprescindibles (sin fijar versión → Helm resuelve dependencias)#
+  # Plugins imprescindibles
   ###########################################################################
   installPlugins:
     - kubernetes
@@ -22,19 +24,20 @@ controller:
     - git
     - docker-workflow
     - blueocean
-    - configuration-as-code # por si lo activas más adelante
+    - configuration-as-code
 
   ###########################################################################
-  # Desactivar JCasC / auto-reload (evita el init-container problemático)   #
+  # Desactivar JCasC y el sidecar de autoreload (evita errores en init)
   ###########################################################################
   JCasC:
     enabled: false
+
   sidecars:
     configAutoReload:
       enabled: false
 
     ###########################################################################
-    # Sidecar Docker-in-Docker (para docker build / push en pipelines)        #
+    # Sidecar DinD (Docker-in-Docker) para permitir docker build/push
     ###########################################################################
     dind:
       enabled: true
@@ -42,17 +45,17 @@ controller:
       securityContext:
         privileged: true
       args:
-        - "--host=tcp://localhost:2375"
-        - "--host=unix:///var/run/docker.sock"
+        - --host=tcp://localhost:2375
+        - --host=unix:///var/run/docker.sock
       env:
-        - name: DOCKER_TLS_CERTDIR # desactiva TLS dentro de DinD
+        - name: DOCKER_TLS_CERTDIR
           value: ""
       volumeMounts:
         - name: docker-storage
           mountPath: /var/lib/docker
 
   ###########################################################################
-  # Init-container que copia el binario docker en /binary inside Jenkins    #
+  # Init-container para copiar el binario docker dentro del contenedor Jenkins
   ###########################################################################
   initContainers:
     - name: install-docker-cli
@@ -63,36 +66,37 @@ controller:
           mountPath: /binary
 
   ###########################################################################
-  # Volúmenes para DinD y binario docker                                    #
+  # Volúmenes para DinD y docker CLI
   ###########################################################################
   volumes:
     - name: docker-storage
       emptyDir: {}
     - name: docker-binary
       emptyDir: {}
+
   volumeMounts:
     - name: docker-binary
       mountPath: /binary
 
   ###########################################################################
-  # Aseguramos que /binary está en el PATH                                  #
+  # Añadir el binario docker al PATH
   ###########################################################################
   containerEnv:
     - name: PATH
       value: "/binary:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 ##############################################################################
-# Persistencia – PVC provisionado por local-path (default en k3d/k3s)        #
+# Persistencia (almacenamiento local)
 ##############################################################################
 persistence:
   enabled: true
-  storageClass: local-path # cámbialo a longhorn, nfs-client-provisioner, etc.
-  size: 8Gi
-  existingClaim: "" # deja vacío para que Helm cree el PVC
+  storageClass: local-path # ⛔ No soporta resize → no cambiar tamaño si ya existe el PVC
+  size: 8Gi # Debe coincidir con el PVC ya creado
+  existingClaim: "" # Dejar vacío para que Helm lo cree automáticamente
 
 ##############################################################################
-# Exposición – NodePort (fijo 32000)                                         #
+# Exposición externa vía NodePort
 ##############################################################################
 service:
   type: NodePort
-  nodePort: 32000
+  nodePort: 32000 # Jenkins estará disponible en http://<nodeIP>:32000
