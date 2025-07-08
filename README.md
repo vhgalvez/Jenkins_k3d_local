@@ -25,6 +25,13 @@ Este repositorio contiene la configuración necesaria para desplegar Jenkins en 
       -f jenkins-values.yaml
     ```
 
+
+
+
+kubectl exec -n jenkins -it svc/jenkins-local-k3d -c jenkins -- \
+  /bin/cat /run/secrets/additional/chart-admin-password && echo
+
+
 2. Verifica que el pod esté activo:
 
     ```bash
