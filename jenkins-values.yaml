@@ -1,23 +1,12 @@
-################################################################################
-# Jenkins – valores personalizados para Helm chart oficial
-# Entorno: Clúster local con k3s o k3d (almacenamiento local-path)
-################################################################################
-
+# jenkins-values.yaml
 controller:
   image:
-    # Imagen LTS con soporte para JDK 17 (estable y recomendada)
     tag: "2.440.3-jdk17"
 
-  ###########################################################################
-  # Credenciales iniciales (✱ cámbialas en producción)
-  ###########################################################################
   admin:
     username: admin
     password: admin
 
-  ###########################################################################
-  # Plugins imprescindibles
-  ###########################################################################
   installPlugins:
     - kubernetes
     - workflow-aggregator
@@ -26,9 +15,6 @@ controller:
     - blueocean
     - configuration-as-code
 
-  ###########################################################################
-  # Desactivar JCasC y el sidecar de autoreload (evita errores en init)
-  ###########################################################################
   JCasC:
     enabled: false
 
@@ -36,9 +22,6 @@ controller:
     configAutoReload:
       enabled: false
 
-    ###########################################################################
-    # Sidecar DinD (Docker-in-Docker) para permitir docker build/push
-    ###########################################################################
     dind:
       enabled: true
       image: docker:24-dind
@@ -54,9 +37,6 @@ controller:
         - name: docker-storage
           mountPath: /var/lib/docker
 
-  ###########################################################################
-  # Init-container para copiar el binario docker dentro del contenedor Jenkins
-  ###########################################################################
   initContainers:
     - name: install-docker-cli
       image: docker:24-cli
@@ -65,9 +45,6 @@ controller:
         - name: docker-binary
           mountPath: /binary
 
-  ###########################################################################
-  # Volúmenes para DinD y docker CLI
-  ###########################################################################
   volumes:
     - name: docker-storage
       emptyDir: {}
@@ -78,25 +55,16 @@ controller:
     - name: docker-binary
       mountPath: /binary
 
-  ###########################################################################
-  # Añadir el binario docker al PATH
-  ###########################################################################
   containerEnv:
     - name: PATH
       value: "/binary:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
-##############################################################################
-# Persistencia (almacenamiento local)
-##############################################################################
 persistence:
   enabled: true
-  storageClass: local-path # ⛔ No soporta resize → no cambiar tamaño si ya existe el PVC
-  size: 8Gi # Debe coincidir con el PVC ya creado
-  existingClaim: "" # Dejar vacío para que Helm lo cree automáticamente
+  storageClass: local-path
+  size: 8Gi
+  existingClaim: ""
 
-##############################################################################
-# Exposición externa vía NodePort
-##############################################################################
 service:
   type: NodePort
-  nodePort: 32000 # Jenkins estará disponible en http://<nodeIP>:32000
+  nodePort: 32000
