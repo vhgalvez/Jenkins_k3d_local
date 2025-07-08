@@ -1,10 +1,10 @@
 controller:
   image:
-    tag: "lts" # versión de la imagen jenkins/jenkins
+    tag: "lts"              # jenkins/jenkins:lts
 
   ## Credenciales iniciales
   admin:
-    username: admin # ¡cámbialas luego!
+    username: admin
     password: admin
 
   ## Plugins imprescindibles
@@ -16,8 +16,17 @@ controller:
     - credentials-binding:1.27
     - blueocean:1.25.0
 
-  ## Sidecar Docker-in-Docker
+  ## ─── Desactivar JCasC para evitar init-container que falla ─────────────
+  JCasC:
+    enabled: false
+
+  ## ─── Sidecars ─────────────────────────────────────────────────────────
   sidecars:
+    # Desactiva el auto-reload que acompañaba a JCasC
+    configAutoReload:
+      enabled: false
+
+    # DinD para poder hacer docker build / push en los pipelines
     dind:
       image: docker:24-dind
       securityContext:
@@ -32,23 +41,22 @@ controller:
         - name: docker-graph-storage
           mountPath: /var/lib/docker
 
-  ## Volúmenes efímeros locales
+  ## ─── Volúmenes y mounts ───────────────────────────────────────────────
   volumes:
     - name: docker-graph-storage
       emptyDir: {}
     - name: docker-binary
       emptyDir: {}
 
-  ## InitContainer: instala docker-cli
+  volumeMounts:
+    - name: docker-binary          # expone /binary dentro del contenedor Jenkins
+      mountPath: /binary
+
+  ## ─── Init-container: copia el binario docker ──────────────────────────
   initContainers:
     - name: install-docker-cli
-      image: alpine:3.19
-      command:
-        - sh
-        - -c
-        - |
-          apk add --no-cache docker-cli
-          cp /usr/bin/docker /binary/docker
+      image: docker:24-cli          # trae /usr/local/bin/docker ya listo
+      command: ["cp", "/usr/local/bin/docker", "/binary/docker"]
       volumeMounts:
         - name: docker-binary
           mountPath: /binary
@@ -58,7 +66,7 @@ controller:
     - name: PATH
       value: "/binary:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
-## Persistencia con local-path (nativo en K3d/K3s, no instala nada extra)
+## ─── Persistencia local (funciona en k3d/k3s sin extras) ─────────────────
 persistence:
   enabled: true
   storageClass: local-path
