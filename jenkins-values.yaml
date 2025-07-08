@@ -1,7 +1,7 @@
 controller:
-  tag: "lts"
+  image:
+    tag: "lts"
 
-  ## Plugins esenciales
   installPlugins:
     - docker-workflow:1.28
     - workflow-aggregator:2.7
@@ -10,7 +10,6 @@ controller:
     - credentials-binding:1.27
     - blueocean:1.25.0
 
-  ## Sidecar Docker-in-Docker
   sidecars:
     dind:
       image: docker:24-dind
@@ -26,14 +25,12 @@ controller:
         - name: docker-graph-storage
           mountPath: /var/lib/docker
 
-  ## Volúmenes necesarios
   volumes:
     - name: docker-graph-storage
       emptyDir: {}
     - name: docker-binary
       emptyDir: {}
 
-  ## InitContainer para instalar docker-cli
   initContainers:
     - name: install-docker-cli
       image: alpine:3.19
@@ -47,17 +44,9 @@ controller:
         - name: docker-binary
           mountPath: /binary
 
-  ## Configurar PATH para incluir el binario docker
   containerEnv:
     - name: PATH
       value: "/binary:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
-  ## Credenciales admin por defecto (puedes cambiarlas luego)
   adminUser: admin
   adminPassword: admin
-
-## Almacenamiento persistente usando local-path (ya viene en K3s)
-persistence:
-  enabled: true
-  storageClass: local-path
-  size: 4Gi
