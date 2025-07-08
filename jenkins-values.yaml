@@ -11,7 +11,7 @@ controller:
   ###########################################################################
   admin:
     username: admin
-    password: admin   # ➜ cámbialo en producción
+    password: admin # ➜ cámbialo en producción
 
   ###########################################################################
   # Plugins imprescindibles (sin fijar versión → Helm resuelve dependencias)#
@@ -22,7 +22,7 @@ controller:
     - git
     - docker-workflow
     - blueocean
-    - configuration-as-code        # por si lo activas más adelante
+    - configuration-as-code # por si lo activas más adelante
 
   ###########################################################################
   # Desactivar JCasC / auto-reload (evita el init-container problemático)   #
@@ -33,9 +33,9 @@ controller:
     configAutoReload:
       enabled: false
 
-  ###########################################################################
-  # Sidecar Docker-in-Docker (para docker build / push en pipelines)        #
-  ###########################################################################
+    ###########################################################################
+    # Sidecar Docker-in-Docker (para docker build / push en pipelines)        #
+    ###########################################################################
     dind:
       enabled: true
       image: docker:24-dind
@@ -45,7 +45,7 @@ controller:
         - "--host=tcp://localhost:2375"
         - "--host=unix:///var/run/docker.sock"
       env:
-        - name: DOCKER_TLS_CERTDIR   # desactiva TLS dentro de DinD
+        - name: DOCKER_TLS_CERTDIR # desactiva TLS dentro de DinD
           value: ""
       volumeMounts:
         - name: docker-storage
@@ -86,9 +86,9 @@ controller:
 ##############################################################################
 persistence:
   enabled: true
-  storageClass: local-path   # cámbialo a longhorn, nfs-client-provisioner, etc.
+  storageClass: local-path # cámbialo a longhorn, nfs-client-provisioner, etc.
   size: 8Gi
-  existingClaim: ""          # deja vacío para que Helm cree el PVC
+  existingClaim: "" # deja vacío para que Helm cree el PVC
 
 ##############################################################################
 # Exposición – NodePort (fijo 32000)                                         #
