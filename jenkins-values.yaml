@@ -1,73 +1,98 @@
+################################################################################
+# Jenkins – valores para clúster k3d/k3s local
+################################################################################
 controller:
   image:
-    tag: "lts"              # jenkins/jenkins:lts
+    # Última LTS estable con JDK 17 (recomendado)
+    tag: "2.440.3-jdk17"
 
-  ## Credenciales iniciales
+  ###########################################################################
+  # Credenciales iniciales                                                  #
+  ###########################################################################
   admin:
     username: admin
-    password: admin
+    password: admin   # ➜ cámbialo en producción
 
-  ## Plugins imprescindibles
+  ###########################################################################
+  # Plugins imprescindibles (sin fijar versión → Helm resuelve dependencias)#
+  ###########################################################################
   installPlugins:
-    - docker-workflow:1.28
-    - workflow-aggregator:2.7
-    - git:4.11.0
-    - credentials:1144.v76b_089ccd026
-    - credentials-binding:1.27
-    - blueocean:1.25.0
+    - kubernetes
+    - workflow-aggregator
+    - git
+    - docker-workflow
+    - blueocean
+    - configuration-as-code        # por si lo activas más adelante
 
-  ## ─── Desactivar JCasC para evitar init-container que falla ─────────────
+  ###########################################################################
+  # Desactivar JCasC / auto-reload (evita el init-container problemático)   #
+  ###########################################################################
   JCasC:
     enabled: false
-
-  ## ─── Sidecars ─────────────────────────────────────────────────────────
   sidecars:
-    # Desactiva el auto-reload que acompañaba a JCasC
     configAutoReload:
       enabled: false
 
-    # DinD para poder hacer docker build / push en los pipelines
+  ###########################################################################
+  # Sidecar Docker-in-Docker (para docker build / push en pipelines)        #
+  ###########################################################################
     dind:
+      enabled: true
       image: docker:24-dind
       securityContext:
         privileged: true
       args:
-        - --host=tcp://localhost:2375
-        - --host=unix:///var/run/docker.sock
+        - "--host=tcp://localhost:2375"
+        - "--host=unix:///var/run/docker.sock"
       env:
-        - name: DOCKER_TLS_CERTDIR
+        - name: DOCKER_TLS_CERTDIR   # desactiva TLS dentro de DinD
           value: ""
       volumeMounts:
-        - name: docker-graph-storage
+        - name: docker-storage
           mountPath: /var/lib/docker
 
-  ## ─── Volúmenes y mounts ───────────────────────────────────────────────
-  volumes:
-    - name: docker-graph-storage
-      emptyDir: {}
-    - name: docker-binary
-      emptyDir: {}
-
-  volumeMounts:
-    - name: docker-binary          # expone /binary dentro del contenedor Jenkins
-      mountPath: /binary
-
-  ## ─── Init-container: copia el binario docker ──────────────────────────
+  ###########################################################################
+  # Init-container que copia el binario docker en /binary inside Jenkins    #
+  ###########################################################################
   initContainers:
     - name: install-docker-cli
-      image: docker:24-cli          # trae /usr/local/bin/docker ya listo
+      image: docker:24-cli
       command: ["cp", "/usr/local/bin/docker", "/binary/docker"]
       volumeMounts:
         - name: docker-binary
           mountPath: /binary
 
-  ## Añadir /binary al PATH
+  ###########################################################################
+  # Volúmenes para DinD y binario docker                                    #
+  ###########################################################################
+  volumes:
+    - name: docker-storage
+      emptyDir: {}
+    - name: docker-binary
+      emptyDir: {}
+  volumeMounts:
+    - name: docker-binary
+      mountPath: /binary
+
+  ###########################################################################
+  # Aseguramos que /binary está en el PATH                                  #
+  ###########################################################################
   containerEnv:
     - name: PATH
       value: "/binary:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
-## ─── Persistencia local (funciona en k3d/k3s sin extras) ─────────────────
+##############################################################################
+# Persistencia – PVC provisionado por local-path (default en k3d/k3s)        #
+##############################################################################
 persistence:
   enabled: true
-  storageClass: local-path
-  size: 4Gi
+  storageClass: local-path   # cámbialo a longhorn, nfs-client-provisioner, etc.
+  size: 8Gi
+  existingClaim: ""          # deja vacío para que Helm cree el PVC
+
+##############################################################################
+# Exposición – NodePort (fijo 32000)                                         #
+##############################################################################
+service:
+  type: NodePort
+  nodePort: 32000
