@@ -1,7 +1,13 @@
 controller:
   image:
-    tag: "lts"
+    tag: "lts" # versión de la imagen jenkins/jenkins
 
+  ## Credenciales iniciales
+  admin:
+    username: admin # ¡cámbialas luego!
+    password: admin
+
+  ## Plugins imprescindibles
   installPlugins:
     - docker-workflow:1.28
     - workflow-aggregator:2.7
@@ -10,6 +16,7 @@ controller:
     - credentials-binding:1.27
     - blueocean:1.25.0
 
+  ## Sidecar Docker-in-Docker
   sidecars:
     dind:
       image: docker:24-dind
@@ -25,12 +32,14 @@ controller:
         - name: docker-graph-storage
           mountPath: /var/lib/docker
 
+  ## Volúmenes efímeros locales
   volumes:
     - name: docker-graph-storage
       emptyDir: {}
     - name: docker-binary
       emptyDir: {}
 
+  ## InitContainer: instala docker-cli
   initContainers:
     - name: install-docker-cli
       image: alpine:3.19
@@ -44,9 +53,13 @@ controller:
         - name: docker-binary
           mountPath: /binary
 
+  ## Añadir /binary al PATH
   containerEnv:
     - name: PATH
       value: "/binary:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
-  adminUser: admin
-  adminPassword: admin
+## Persistencia con local-path (nativo en K3d/K3s, no instala nada extra)
+persistence:
+  enabled: true
+  storageClass: local-path
+  size: 4Gi
