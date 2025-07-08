@@ -27,6 +27,13 @@ Este repositorio contiene la configuración necesaria para desplegar Jenkins en 
 
 
 
+# Espera a que el pod quede 2/2 Running
+kubectl get pods -n jenkins -w
+
+# Comprueba que Docker funciona dentro de Jenkins
+kubectl exec -it -n jenkins jenkins-local-k3d-0 -- docker version
+
+
 
 kubectl exec -n jenkins -it svc/jenkins-local-k3d -c jenkins -- \
   /bin/cat /run/secrets/additional/chart-admin-password && echo
@@ -44,6 +51,11 @@ kubectl exec -n jenkins -it svc/jenkins-local-k3d -c jenkins -- \
     kubectl exec -it -n jenkins jenkins-0 -- bash
     docker version
     ```
+
+
+
+
+
 
 ## 🔐 Acceso a Jenkins
 
