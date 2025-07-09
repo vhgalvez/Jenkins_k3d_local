@@ -3,6 +3,9 @@ controller:
   image:
     repository: jenkins/jenkins
     tag: "2.452.2-jdk17"
+    pullPolicy: IfNotPresent
+    # 👇 Evita que Helm sobrescriba con la versión del Chart
+    imageOverride: jenkins/jenkins:2.452.2-jdk17
 
   admin:
     username: admin
@@ -41,22 +44,24 @@ controller:
   initContainers:
     - name: install-docker-cli
       image: docker:24-cli
-      command: ["sh", "-c", "cp $(which docker) /var/jenkins_home/bin/docker"]
+      command: ["sh", "-c", "cp $(which docker) /docker-bin/docker"]
       volumeMounts:
-        - name: jenkins-home
-          mountPath: /var/jenkins_home
+        - name: docker-bin
+          mountPath: /docker-bin
 
   podAnnotations:
-    # Evita errores de SELinux/AppArmor en algunos entornos
     container.apparmor.security.beta.kubernetes.io/jenkins: unconfined
 
   volumes:
     - name: docker-storage
       emptyDir: {}
 
-  containerEnv:
-    - name: PATH
-      value: "/var/jenkins_home/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    - name: docker-bin
+      emptyDir: {}
+
+  volumeMounts:
+    - name: docker-bin
+      mountPath: /usr/local/bin  # estándar para binarios como docker
 
 persistence:
   enabled: true

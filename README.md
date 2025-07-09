@@ -156,3 +156,11 @@ Estos comandos borrarán todo lo que tenga que ver con Jenkins en tu clúster (p
 ## 📜 Licencia
 
 MIT © [https://github.com/vhgalvez]
+
+
+helm uninstall jenkins-local-k3d -n jenkins
+kubectl delete pvc --all -n jenkins
+kubectl delete ns jenkins
+kubectl get ns
+kubectl get pods -n jenkins -w
+kubectl get pvc -n jenkins
