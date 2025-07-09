@@ -11,7 +11,7 @@ controller:
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
-  # 🔑 Inyectamos las credenciales en env vars para usar en JCasC
+  # 🔑 Inyectamos las credenciales en env vars para JCasC
   containerEnv:
     - name: JENKINS_ADMIN_USER
       valueFrom:
@@ -81,7 +81,7 @@ controller:
       enabled: true
 
   podAnnotations:
-    # ahora usando campo nativo
+    # ahora usando campo nativo de Kubernetes
     appArmorProfile: unconfined
 
   volumes:
