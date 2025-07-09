@@ -1,7 +1,7 @@
 # jenkins-values.yaml
 controller:
   image:
-    tag: "2.440.3-jdk17"
+    tag: "2.452.2-jdk17"  # ✅ Corregido: compatible con los plugins más recientes
 
   admin:
     username: admin
@@ -37,7 +37,7 @@ controller:
         - name: docker-storage
           mountPath: /var/lib/docker
 
-  initContainers:
+    extraInitContainers:
     - name: install-docker-cli
       image: docker:24-cli
       command: ["sh", "-c", "cp $(which docker) /binary/docker"]
