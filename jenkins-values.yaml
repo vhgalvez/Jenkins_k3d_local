@@ -4,8 +4,6 @@ controller:
     repository: jenkins/jenkins
     tag: "2.452.2-jdk17"
     pullPolicy: IfNotPresent
-    # 👇 Evita que Helm sobrescriba con la versión del Chart
-    imageOverride: jenkins/jenkins:2.452.2-jdk17
 
   admin:
     username: admin
@@ -49,6 +47,10 @@ controller:
         - name: docker-bin
           mountPath: /docker-bin
 
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+
   podAnnotations:
     container.apparmor.security.beta.kubernetes.io/jenkins: unconfined
 
@@ -61,7 +63,11 @@ controller:
 
   volumeMounts:
     - name: docker-bin
-      mountPath: /usr/local/bin  # estándar para binarios como docker
+      mountPath: /usr/local/bin
+
+  containerEnv:
+    - name: PATH
+      value: "/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 persistence:
   enabled: true
