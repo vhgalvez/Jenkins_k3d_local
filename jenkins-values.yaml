@@ -1,12 +1,10 @@
 # jenkins-values.yaml
-# jenkins-values.yaml
 controller:
   image:
     repository: jenkins/jenkins
     tag: "2.504.3-jdk17"
     pullPolicy: IfNotPresent
 
-  # 👤 Usuario admin cargado desde un Secret externo
   admin:
     existingSecret: jenkins-admin
     userKey: jenkins-admin-user
@@ -31,6 +29,9 @@ controller:
           securityRealm:
             local:
               allowsSignup: false
+              users:
+                - id: ${jenkins-admin-user}
+                  password: ${jenkins-admin-password}
           authorizationStrategy:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
@@ -59,7 +60,6 @@ controller:
                         resourceRequestMemory: 128Mi
                 yamlMergeStrategy: override
 
-  # 🔧 Sidecar desactivado temporalmente para evitar CrashLoopBackOff
   sidecars:
     configAutoReload:
       enabled: false
