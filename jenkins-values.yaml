@@ -61,22 +61,30 @@ controller:
                 templates:
                   - name: "default"
                     label: "jenkins-agent"
-                    nodeUsageMode: NORMAL
+                    nodeUsageMode: "NORMAL"
                     idleMinutes: 1
                     containers:
-                      - name: jnlp
+                      - name: "jnlp"
                         image: "jenkins/inbound-agent:alpine"
                         args: "${computer.jnlpmac} ${computer.name}"
                         ttyEnabled: true
                         resourceRequestCpu: "100m"
                         resourceRequestMemory: "128Mi"
+                        resourceLimitCpu: "500m"
+                        resourceLimitMemory: "512Mi"
 
   sidecars:
     configAutoReload:
       enabled: true
 
+  # Seguridad del contenedor (sin AppArmor)
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+
   podAnnotations:
-    appArmorProfile: unconfined
+    container.apparmor.security.beta.kubernetes.io/jenkins: unconfined
 
   volumes:
     - name: docker-storage
