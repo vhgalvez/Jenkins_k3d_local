@@ -226,3 +226,11 @@ bash
 Copiar
 Editar
 kubectl exec -it -n jenkins jenkins-local-k3d-0 -- docker version
+
+
+
+
+
+helm upgrade --install jenkins-local-k3d jenkins/jenkins \
+  -n jenkins --create-namespace \
+  -f ~/projects/Jenkins_k3d_local/jenkins-values.yaml
