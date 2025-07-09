@@ -296,3 +296,5 @@ kubectl get pods -n jenkins -w
 
 
 kubectl get ns
+
+sudo git pull
