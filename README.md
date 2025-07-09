@@ -257,13 +257,13 @@ kubectl exec -it -n jenkins jenkins-local-k3d-0 -- docker version
 helm uninstall jenkins-local-k3d -n jenkins
 kubectl delete pvc --all -n jenkins
 kubectl delete ns jenkins
+kubectl delete pvc -l app.kubernetes.io/instance=jenkins-local-k3d -n jenkins
+
+
 kubectl get ns
-kubectl get pods -n jenkins -w
+
+kubectl get pods -n jenkins
 kubectl get pvc -n jenkins
-
-
-
-
 
 
 helm upgrade --install jenkins-local-k3d jenkins/jenkins \
