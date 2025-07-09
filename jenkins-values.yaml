@@ -5,10 +5,24 @@ controller:
     tag: "2.504.3-jdk17"
     pullPolicy: IfNotPresent
 
+  # 👤 Usuario admin cargado desde un Secret externo
   admin:
     existingSecret: jenkins-admin
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
+
+  # 🔑 Exponemos las credenciales en env vars para JCasC
+  containerEnv:
+    - name: JENKINS_ADMIN_USER
+      valueFrom:
+        secretKeyRef:
+          name: jenkins-admin
+          key: jenkins-admin-user
+    - name: JENKINS_ADMIN_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: jenkins-admin
+          key: jenkins-admin-password
 
   installPlugins:
     - kubernetes
@@ -30,8 +44,8 @@ controller:
             local:
               allowsSignup: false
               users:
-                - id: ${jenkins-admin-user}
-                  password: ${jenkins-admin-password}
+                - id: "${JENKINS_ADMIN_USER}"
+                  password: "${JENKINS_ADMIN_PASSWORD}"
           authorizationStrategy:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
@@ -53,7 +67,7 @@ controller:
                     idleMinutes: 1
                     containers:
                       - name: jnlp
-                        image: jenkins/inbound-agent:3283.v92c105e0f819-4
+                        image: jenkins/inbound-agent:alpine
                         args: "${computer.jnlpmac} ${computer.name}"
                         ttyEnabled: true
                         resourceRequestCpu: 100m
@@ -62,10 +76,10 @@ controller:
 
   sidecars:
     configAutoReload:
-      enabled: false
+      enabled: true
 
   podAnnotations:
-    container.apparmor.security.beta.kubernetes.io/jenkins: unconfined
+    appArmorProfile: unconfined
 
   volumes:
     - name: docker-storage
