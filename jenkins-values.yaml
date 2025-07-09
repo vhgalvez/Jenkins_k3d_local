@@ -23,7 +23,6 @@ controller:
           key: jenkins-admin-password
 
   installPlugins:
-    - configuration-as-code
     - kubernetes
     - workflow-aggregator
     - git
@@ -31,6 +30,7 @@ controller:
     - blueocean
     - credentials
     - credentials-binding
+    - configuration-as-code
 
   JCasC:
     enabled: true
@@ -53,8 +53,8 @@ controller:
                 serverUrl: "https://kubernetes.default"
                 skipTlsVerify: true
                 namespace: "jenkins"
-                jenkinsUrl: "http://jenkins:8080"
-                jenkinsTunnel: "jenkins-agent:50000"
+                jenkinsUrl: "http://jenkins.jenkins.svc.cluster.local:8080"
+                jenkinsTunnel: "jenkins-agent.jenkins.svc.cluster.local:50000"
                 containerCap: 10
                 connectTimeout: 5
                 readTimeout: 15
@@ -94,6 +94,18 @@ controller:
     - name: docker-bin
       mountPath: /usr/local/bin
 
+agent:
+  podName: "jenkins-agent"
+  customJenkinsLabels:
+    - jenkins-agent
+  nodeUsageMode: NORMAL
+  containers:
+    - name: jnlp
+      image: "jenkins/inbound-agent:alpine"
+      ttyEnabled: true
+  connectTimeout: 100
+  runAsUser: 1000
+
 persistence:
   enabled: true
   storageClass: local-path
@@ -102,3 +114,4 @@ persistence:
 service:
   type: NodePort
   nodePort: 32000
+  agentListenerPort: 50000  # <- Muy importante para el JNLP
