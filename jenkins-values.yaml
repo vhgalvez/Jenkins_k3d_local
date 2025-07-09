@@ -5,22 +5,11 @@ controller:
     tag: "2.504.3-jdk17"
     pullPolicy: IfNotPresent
 
+  # 👤 Usuario admin cargado desde un Secret externo
   admin:
     existingSecret: jenkins-admin
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
-
-  containerEnv:
-    - name: ADMIN_USERNAME
-      valueFrom:
-        secretKeyRef:
-          name: jenkins-admin
-          key: jenkins-admin-user
-    - name: ADMIN_PASSWORD
-      valueFrom:
-        secretKeyRef:
-          name: jenkins-admin
-          key: jenkins-admin-password
 
   installPlugins:
     - kubernetes
@@ -41,13 +30,9 @@ controller:
           securityRealm:
             local:
               allowsSignup: false
-              users:
-                - id: "${ADMIN_USERNAME}"
-                  password: "${ADMIN_PASSWORD}"
           authorizationStrategy:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
-
           clouds:
             - kubernetes:
                 name: "kubernetes"
