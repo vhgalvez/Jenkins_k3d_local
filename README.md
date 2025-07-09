@@ -172,6 +172,11 @@ helm upgrade --install jenkins-local-k3d jenkins/jenkins \
 
 
 
+kubectl -n jenkins create secret generic jenkins-admin \
+  --from-literal=jenkins-admin-user=admin \
+  --from-literal=jenkins-admin-password='CambialaYa123!'
+
+
 
 
 🌐 Cómo acceder a Jenkins (web UI)
