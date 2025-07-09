@@ -1,5 +1,4 @@
 # jenkins-values.yaml
-
 controller:
   image:
     repository: jenkins/jenkins
