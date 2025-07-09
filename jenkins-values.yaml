@@ -11,7 +11,7 @@ controller:
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
-  # 🔑 Exponemos las credenciales en env vars para JCasC
+  # 🔑 Inyectamos las credenciales en env vars para usar en JCasC
   containerEnv:
     - name: JENKINS_ADMIN_USER
       valueFrom:
@@ -33,6 +33,8 @@ controller:
     - configuration-as-code
     - credentials
     - credentials-binding
+    # Forzamos la versión compatible de SSE Gateway
+    - sse-gateway:1.29
 
   JCasC:
     enabled: true
@@ -60,6 +62,7 @@ controller:
                 containerCap: 10
                 connectTimeout: 5
                 readTimeout: 15
+                yamlMergeStrategy: override
                 templates:
                   - name: "default"
                     label: "jenkins-agent"
@@ -70,15 +73,15 @@ controller:
                         image: jenkins/inbound-agent:alpine
                         args: "${computer.jnlpmac} ${computer.name}"
                         ttyEnabled: true
-                        resourceRequestCpu: 100m
-                        resourceRequestMemory: 128Mi
-                yamlMergeStrategy: override
+                        resourceRequestCpu: "100m"
+                        resourceRequestMemory: "128Mi"
 
   sidecars:
     configAutoReload:
       enabled: true
 
   podAnnotations:
+    # ahora usando campo nativo
     appArmorProfile: unconfined
 
   volumes:
