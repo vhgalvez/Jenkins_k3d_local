@@ -36,3 +36,9 @@ kubectl rollout status statefulset/"$RELEASE" -n "$NAMESPACE" --timeout=5m || {
 
 echo "✅ Jenkins desplegado correctamente. Pods:"
 kubectl get pods -n "$NAMESPACE"
+
+echo "🌐 Abriendo acceso a Jenkins en http://localhost:8080 ..."
+echo "📌 Usa el usuario: admin y contraseña: $ADMIN_PASS"
+echo "🔁 Presiona Ctrl+C para cerrar el port-forward cuando termines."
+
+kubectl port-forward -n "$NAMESPACE" svc/"$RELEASE" 8080:8080
