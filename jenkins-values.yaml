@@ -4,6 +4,7 @@ controller:
     repository: jenkins/jenkins
     tag: "2.452.2-jdk17"
     pullPolicy: IfNotPresent
+    imageOverride: jenkins/jenkins:2.452.2-jdk17
 
   admin:
     username: admin
@@ -18,38 +19,40 @@ controller:
     - configuration-as-code
 
   JCasC:
-    enabled: false
+    enabled: true
+    defaultConfig: false
+    configScripts:
+      kubernetes-cloud: |
+        jenkins:
+          clouds:
+            - kubernetes:
+                name: "kubernetes"
+                serverUrl: "https://kubernetes.default"
+                skipTlsVerify: true
+                namespace: "jenkins"
+                jenkinsUrl: "http://jenkins-local-k3d.jenkins.svc.cluster.local:8080"
+                jenkinsTunnel: "jenkins-local-k3d-agent.jenkins.svc.cluster.local:50000"
+                containerCap: 10
+                connectTimeout: 5
+                readTimeout: 15
+                templates:
+                  - name: default
+                    label: jenkins-agent
+                    containers:
+                      - name: jnlp
+                        image: jenkins/inbound-agent:alpine
+                        alwaysPullImage: false
+                        args: "${computer.jnlpmac} ${computer.name}"
+                        ttyEnabled: true
+                        resourceRequestCpu: "100m"
+                        resourceRequestMemory: "128Mi"
+                    nodeUsageMode: NORMAL
+                    idleMinutes: 1
+                    yamlMergeStrategy: override
 
   sidecars:
     configAutoReload:
-      enabled: false
-
-    dind:
       enabled: true
-      image: docker:24-dind
-      securityContext:
-        privileged: true
-      args:
-        - --host=tcp://localhost:2375
-        - --host=unix:///var/run/docker.sock
-      env:
-        - name: DOCKER_TLS_CERTDIR
-          value: ""
-      volumeMounts:
-        - name: docker-storage
-          mountPath: /var/lib/docker
-
-  initContainers:
-    - name: install-docker-cli
-      image: docker:24-cli
-      command: ["sh", "-c", "cp $(which docker) /docker-bin/docker"]
-      volumeMounts:
-        - name: docker-bin
-          mountPath: /docker-bin
-
-  securityContext:
-    runAsUser: 1000
-    fsGroup: 1000
 
   podAnnotations:
     container.apparmor.security.beta.kubernetes.io/jenkins: unconfined
@@ -57,7 +60,6 @@ controller:
   volumes:
     - name: docker-storage
       emptyDir: {}
-
     - name: docker-bin
       emptyDir: {}
 
@@ -65,15 +67,10 @@ controller:
     - name: docker-bin
       mountPath: /usr/local/bin
 
-  containerEnv:
-    - name: PATH
-      value: "/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-
 persistence:
   enabled: true
   storageClass: local-path
   size: 8Gi
-  existingClaim: ""
 
 service:
   type: NodePort

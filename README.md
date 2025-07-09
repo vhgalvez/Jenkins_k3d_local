@@ -166,6 +166,9 @@ kubectl get pods -n jenkins -w
 kubectl get pvc -n jenkins
 
 
+helm upgrade --install jenkins-local-k3d jenkins/jenkins \
+  -n jenkins --create-namespace \
+  -f jenkins-values.yaml
 
 
 
