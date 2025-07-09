@@ -156,7 +156,7 @@ kubectl delete pvc -n jenkins jenkins-local-k3d
 # 4) Comprueba que ya no quedan pods ni volúmenes
 kubectl get pods -n jenkins
 kubectl get pvc  -n jenkins
-kubectl get pv   | grep jenkins   # ←  solo si quieres asegurarte
+kubectl get pv   | grep jenkins
 
 # 5) (Opcional) Si quieres un wipe total, borra el namespace y recréalo:
 # kubectl delete namespace jenkins
