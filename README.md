@@ -19,24 +19,24 @@ Este repositorio contiene la configuración necesaria para desplegar Jenkins en 
 
 1. Crear el namespace e instalar Jenkins con Helm:
 
-    ```bash
-    helm upgrade --install jenkins-local-k3d jenkins/jenkins \
-      -n jenkins --create-namespace \
-      -f jenkins-values.yaml
-    ```
+   ```bash
+   helm upgrade --install jenkins-local-k3d jenkins/jenkins \
+     -n jenkins --create-namespace \
+     -f jenkins-values.yaml
+   ```
 
 2. Verifica que el pod esté activo:
 
-    ```bash
-    kubectl get pods -n jenkins
-    ```
+   ```bash
+   kubectl get pods -n jenkins
+   ```
 
 3. Accede al contenedor y verifica que Docker funcione:
 
-    ```bash
-    kubectl exec -it -n jenkins jenkins-0 -- bash
-    docker version
-    ```
+   ```bash
+   kubectl exec -it -n jenkins jenkins-0 -- bash
+   docker version
+   ```
 
 ## Espera a que el pod quede 2/2 Running
 
@@ -77,84 +77,82 @@ Recuerda cambiar estas credenciales tras el primer acceso.
 
 Este despliegue no usa almacenamiento persistente, ideal para pruebas con K3d o Minikube. Todos los datos se perderán si el pod se elimina.
 
-## 📜 Licencia
-
-MIT © [https://github.com/vhgalvez]
-
----
-
-🗑 Cómo eliminar por completo tu Jenkins en k3d paso a paso
+## 🗑 Cómo eliminar por completo tu Jenkins en k3d paso a paso
 
 Estos comandos borrarán todo lo que tenga que ver con Jenkins en tu clúster (pods, servicios, PVC/PV y el propio namespace). Ejecuta todo con un usuario que tenga permisos de administrador en el clúster.
 
 1. Ver qué releases de Helm existen:
 
-    ```bash
-    helm list -A | grep jenkins
-    ```
+   ```bash
+   helm list -A | grep jenkins
+   ```
 
-    Ejemplo de salida:
+   Ejemplo de salida:
 
-    ```
-    NAME                NAMESPACE   REVISION    STATUS      CHART           APP VERSION
-    jenkins-local-k3d  jenkins     1           deployed    jenkins-5.1.12  2.452.2
-    ```
+   ```
+   NAME                NAMESPACE   REVISION    STATUS      CHART           APP VERSION
+   jenkins-local-k3d  jenkins     1           deployed    jenkins-5.1.12  2.452.2
+   ```
 
-    Toma nota del NAME y NAMESPACE (en el ejemplo, jenkins-local-k3d y jenkins).
+   Toma nota del NAME y NAMESPACE (en el ejemplo, jenkins-local-k3d y jenkins).
 
 2. Desinstalar el release de Helm:
 
-    ```bash
-    helm uninstall jenkins-local-k3d -n jenkins
-    ```
+   ```bash
+   helm uninstall jenkins-local-k3d -n jenkins
+   ```
 
-    Esto borra el StatefulSet, Service, ConfigMaps, Secrets, etc. creados por el chart.
+   Esto borra el StatefulSet, Service, ConfigMaps, Secrets, etc. creados por el chart.
 
 3. (Opcional) Borrar el namespace completo:
 
-    Solo si dentro del namespace jenkins no tienes otros recursos que quieras conservar.
+   Solo si dentro del namespace jenkins no tienes otros recursos que quieras conservar.
 
-    ```bash
-    kubectl delete namespace jenkins
-    ```
+   ```bash
+   kubectl delete namespace jenkins
+   ```
 
 4. (Opcional) Eliminar volúmenes persistentes:
 
-    Si mantuviste `persistence.enabled: true`, se habrá creado un PVC/PV con local-path. Para limpiarlo:
+   Si mantuviste `persistence.enabled: true`, se habrá creado un PVC/PV con local-path. Para limpiarlo:
 
-    ```bash
-    # Buscar los PVC que aún existan
-    kubectl get pvc -A | grep jenkins
+   ```bash
+   # Buscar los PVC que aún existan
+   kubectl get pvc -A | grep jenkins
 
-    # Ejemplo de salida
-    # jenkins jenkins-local-k3d Bound pvc-xyz123 4Gi RWO local-path 2d
+   # Ejemplo de salida
+   # jenkins jenkins-local-k3d Bound pvc-xyz123 4Gi RWO local-path 2d
 
-    # Borrar el PVC y su PV asociado
-    kubectl delete pvc jenkins-local-k3d -n jenkins
-    ```
+   # Borrar el PVC y su PV asociado
+   kubectl delete pvc jenkins-local-k3d -n jenkins
+   ```
 
-    El PV local-path asociado se eliminará automáticamente. Si ya eliminaste el namespace, los PVC/PV del mismo namespace se eliminan de forma automática.
+   El PV local-path asociado se eliminará automáticamente. Si ya eliminaste el namespace, los PVC/PV del mismo namespace se eliminan de forma automática.
 
 5. Verificar que no queda nada:
 
-    ```bash
-    helm list -A | grep jenkins # → debería no mostrar nada
-    kubectl get pods -A | grep jenkins # → sin resultados
-    kubectl get pv | grep jenkins # → sin resultados
-    ```
+   ```bash
+   helm list -A | grep jenkins # → debería no mostrar nada
+   kubectl get pods -A | grep jenkins # → sin resultados
+   kubectl get pv | grep jenkins # → sin resultados
+   ```
 
 6. Detén cualquier port-forward que tengas abierto (Ctrl-C en la terminal).
 
 7. Instala de nuevo con el YAML corregido:
 
-    ```bash
-    helm upgrade --install jenkins-local-k3d jenkins/jenkins \
-      -n jenkins --create-namespace \
-      -f jenkins-values.yaml
-    ```
+   ```bash
+   helm upgrade --install jenkins-local-k3d jenkins/jenkins \
+     -n jenkins --create-namespace \
+     -f jenkins-values.yaml
+   ```
 
 8. Sigue el log del pod hasta que pase a Running:
 
-    ```bash
-    kubectl get pods -n jenkins -w
-    ```
+   ```bash
+   kubectl get pods -n jenkins -w
+   ```
+
+## 📜 Licencia
+
+MIT © [https://github.com/vhgalvez]
