@@ -5,13 +5,13 @@ controller:
     tag: "2.504.3-jdk17"
     pullPolicy: IfNotPresent
 
-  # 👤 Admin desde secret externo
+  # 👤 Admin desde Secret externo
   admin:
     existingSecret: jenkins-admin
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
-  # Inyectamos credenciales para JCasC
+  # Inyectamos credenciales en env vars para JCasC
   containerEnv:
     - name: JENKINS_ADMIN_USER
       valueFrom:
@@ -24,14 +24,22 @@ controller:
           name: jenkins-admin
           key: jenkins-admin-password
 
+  # Plugins mínimos
   installPlugins:
     - configuration-as-code
+    - kubernetes
+    - workflow-aggregator
+    - git
+    - docker-workflow
+    - blueocean
+    - credentials
+    - credentials-binding
 
   JCasC:
     enabled: true
     defaultConfig: false
     configScripts:
-      security: |
+      main: |
         jenkins:
           securityRealm:
             local:
@@ -42,11 +50,48 @@ controller:
           authorizationStrategy:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
+          clouds:
+            - kubernetes:
+                name: "kubernetes"
+                serverUrl: "https://kubernetes.default"
+                skipTlsVerify: true
+                namespace: "jenkins"
+                jenkinsUrl: "http://jenkins:8080"
+                jenkinsTunnel: "jenkins-agent:50000"
+                containerCap: 10
+                connectTimeout: 5
+                readTimeout: 15
+                templates:
+                  - name: "default"
+                    label: "jenkins-agent"
+                    nodeUsageMode: NORMAL
+                    idleMinutes: 1
+                    containers:
+                      - name: jnlp
+                        image: "jenkins/inbound-agent:alpine"
+                        args: "${computer.jnlpmac} ${computer.name}"
+                        ttyEnabled: true
+                        resourceRequestCpu: "100m"
+                        resourceRequestMemory: "128Mi"
 
-  # Desactiva el sidecar hasta que Jenkins esté arriba
+  # Ahora sí podemos reactivar el sidecar de recarga automática
   sidecars:
     configAutoReload:
-      enabled: false
+      enabled: true
+
+  podAnnotations:
+    # campo nativo para AppArmor
+    appArmorProfile: unconfined
+
+  volumes:
+    - name: docker-storage
+      emptyDir: {}
+    - name: docker-bin
+      emptyDir: {}
+
+  volumeMounts:
+    - name: docker-bin
+      mountPath: /usr/local/bin
 
 persistence:
   enabled: true
