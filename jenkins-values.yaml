@@ -5,13 +5,11 @@ controller:
     tag: "2.504.3-jdk17"
     pullPolicy: IfNotPresent
 
-  # 👤 Admin desde Secret externo
   admin:
     existingSecret: jenkins-admin
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
-  # Inyectamos credenciales en env vars para JCasC
   containerEnv:
     - name: JENKINS_ADMIN_USER
       valueFrom:
@@ -24,7 +22,6 @@ controller:
           name: jenkins-admin
           key: jenkins-admin-password
 
-  # Plugins mínimos
   installPlugins:
     - configuration-as-code
     - kubernetes
@@ -74,13 +71,11 @@ controller:
                         resourceRequestCpu: "100m"
                         resourceRequestMemory: "128Mi"
 
-  # Ahora sí podemos reactivar el sidecar de recarga automática
   sidecars:
     configAutoReload:
       enabled: true
 
   podAnnotations:
-    # campo nativo para AppArmor
     appArmorProfile: unconfined
 
   volumes:
