@@ -258,6 +258,8 @@ helm uninstall jenkins-local-k3d -n jenkins
 kubectl delete pvc --all -n jenkins
 kubectl delete ns jenkins
 kubectl delete pvc -l app.kubernetes.io/instance=jenkins-local-k3d -n jenkins
+kubectl delete configmap jenkins-local-k3d-jenkins-config -n jenkins
+
 
 
 kubectl get ns
