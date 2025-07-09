@@ -40,7 +40,7 @@ controller:
   initContainers:
     - name: install-docker-cli
       image: docker:24-cli
-      command: ["cp", "/usr/local/bin/docker", "/binary/docker"]
+      command: ["sh", "-c", "cp $(which docker) /binary/docker"]
       volumeMounts:
         - name: docker-binary
           mountPath: /binary

@@ -139,3 +139,33 @@ Si ya eliminaste el namespace, los PVC/PV del mismo namespace se eliminan de for
    helm list -A | grep jenkins # → debería no mostrar nada
    kubectl get pods -A | grep jenkins # → sin resultados
    kubectl get pv | grep jenkins # → sin resultados
+
+
+
+# 1) Detén cualquier port-forward que tengas abierto (Ctrl-C en la terminal)
+#    ───────────────────────────────────────────────────────────────────────
+
+# 2) Elimina la release de Helm
+helm uninstall jenkins-local-k3d -n jenkins
+
+# 3) Borra el PVC que dejó creado (impide volver a instalar con otro tamaño)
+kubectl delete pvc -n jenkins jenkins-local-k3d
+
+#    (Si te dice “NotFound” es que ya no existe, perfecto)
+
+# 4) Comprueba que ya no quedan pods ni volúmenes
+kubectl get pods -n jenkins
+kubectl get pvc  -n jenkins
+kubectl get pv   | grep jenkins   # ←  solo si quieres asegurarte
+
+# 5) (Opcional) Si quieres un wipe total, borra el namespace y recréalo:
+# kubectl delete namespace jenkins
+# kubectl create namespace jenkins
+
+# 6) Instala de nuevo con el YAML corregido
+helm upgrade --install jenkins-local-k3d jenkins/jenkins \
+  -n jenkins --create-namespace \
+  -f jenkins-values.yaml
+
+# 7) Sigue el log del pod hasta que pase a Running
+kubectl get pods -n jenkins -w
