@@ -164,3 +164,65 @@ kubectl delete ns jenkins
 kubectl get ns
 kubectl get pods -n jenkins -w
 kubectl get pvc -n jenkins
+
+
+
+
+
+
+
+🌐 Cómo acceder a Jenkins (web UI)
+🧩 Opción A – Usando port-forward (rápido y fácil)
+Ejecuta este comando:
+
+bash
+Copiar
+Editar
+kubectl port-forward -n jenkins svc/jenkins-local-k3d 8080:8080
+Luego abre tu navegador en:
+
+arduino
+Copiar
+Editar
+http://localhost:8080
+Inicia sesión con las credenciales definidas:
+
+makefile
+Copiar
+Editar
+Usuario: admin
+Contraseña: admin
+⚠️ Cambia estas credenciales en producción.
+
+🧩 Opción B – Usando NodePort (si estás en K3d o Minikube)
+Verifica la IP de tu clúster (si usas K3d):
+
+bash
+Copiar
+Editar
+docker inspect k3d-yourclustername-server-0 | grep "IPAddress"
+O usa esta IP local: 127.0.0.1
+
+Abre tu navegador en:
+
+cpp
+Copiar
+Editar
+http://127.0.0.1:32000
+(32000 es el nodePort que definiste en jenkins-values.yaml)
+
+Inicia sesión con admin / admin.
+
+🗝️ Cómo obtener la contraseña del administrador si la hubieras generado aleatoriamente
+bash
+Copiar
+Editar
+kubectl exec -n jenkins svc/jenkins-local-k3d -c jenkins -- \
+  cat /run/secrets/additional/chart-admin-password
+✅ Verifica que Docker funciona dentro de Jenkins
+Para confirmar que Docker está listo para usar dentro del contenedor Jenkins (gracias a DinD):
+
+bash
+Copiar
+Editar
+kubectl exec -it -n jenkins jenkins-local-k3d-0 -- docker version
