@@ -1,6 +1,7 @@
 # jenkins-values.yaml
 controller:
   image:
+    repository: jenkins/jenkins
     tag: "2.452.2-jdk17"  # ✅ Corregido: compatible con los plugins más recientes
 
   admin:
