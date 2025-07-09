@@ -2,14 +2,10 @@
 controller:
   image:
     repository: jenkins/jenkins
-    tag: "2.452.2-jdk17"
+    tag: "2.504.3-jdk17"
     pullPolicy: IfNotPresent
-    imageOverride: jenkins/jenkins:2.452.2-jdk17
 
-  admin:
-    username: admin
-    password: admin
-
+  # Elimina credenciales estáticas de admin (ya no necesarias si habilitas seguridad)
   installPlugins:
     - kubernetes
     - workflow-aggregator
@@ -17,38 +13,26 @@ controller:
     - docker-workflow
     - blueocean
     - configuration-as-code
+    - credentials
+    - credentials-binding
 
   JCasC:
     enabled: true
     defaultConfig: false
     configScripts:
-      kubernetes-cloud: |
+      security: |
         jenkins:
-          clouds:
-            - kubernetes:
-                name: "kubernetes"
-                serverUrl: "https://kubernetes.default"
-                skipTlsVerify: true
-                namespace: "jenkins"
-                jenkinsUrl: "http://jenkins-local-k3d.jenkins.svc.cluster.local:8080"
-                jenkinsTunnel: "jenkins-local-k3d-agent.jenkins.svc.cluster.local:50000"
-                containerCap: 10
-                connectTimeout: 5
-                readTimeout: 15
-                templates:
-                  - name: default
-                    label: jenkins-agent
-                    containers:
-                      - name: jnlp
-                        image: jenkins/inbound-agent:alpine
-                        alwaysPullImage: false
-                        args: "${computer.jnlpmac} ${computer.name}"
-                        ttyEnabled: true
-                        resourceRequestCpu: "100m"
-                        resourceRequestMemory: "128Mi"
-                    nodeUsageMode: NORMAL
-                    idleMinutes: 1
-                    yamlMergeStrategy: override
+          securityRealm:
+            local:
+              allowsSignup: false
+              users:
+                - id: "admin"
+                  password: "${ADMIN_PASSWORD}"
+          authorizationStrategy:
+            loggedInUsersCanDoAnything:
+              allowAnonymousRead: false
+      kubernetes-cloud: |
+        <<: !include jenkins-casc-config.yaml
 
   sidecars:
     configAutoReload:
