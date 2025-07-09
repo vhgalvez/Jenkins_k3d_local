@@ -5,33 +5,13 @@ controller:
     tag: "2.504.3-jdk17"
     pullPolicy: IfNotPresent
 
+  # 👤 Usuario admin cargado desde un Secret externo
   admin:
     existingSecret: jenkins-admin
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
-  installPlugins:
-    - configuration-as-code
-    - sse-gateway:1.29
-
-  JCasC:
-    enabled: true
-    defaultConfig: false
-    configScripts:
-      main: |
-        jenkins:
-          securityRealm:
-            local:
-              allowsSignup: false
-              # Sólo un usuario, sin clouds ni plantillas todavía
-              users:
-                - id: "${JENKINS_ADMIN_USER}"
-                  password: "${JENKINS_ADMIN_PASSWORD}"
-          authorizationStrategy:
-            loggedInUsersCanDoAnything:
-              allowAnonymousRead: false
-
-  # Inyectamos las env vars para JCasC
+  # 🔑 Inyectamos credenciales en env vars para JCasC
   containerEnv:
     - name: JENKINS_ADMIN_USER
       valueFrom:
@@ -44,9 +24,71 @@ controller:
           name: jenkins-admin
           key: jenkins-admin-password
 
+  installPlugins:
+    - kubernetes
+    - workflow-aggregator
+    - git
+    - docker-workflow
+    - blueocean
+    - configuration-as-code
+    - credentials
+    - credentials-binding
+
+  JCasC:
+    enabled: true
+    defaultConfig: false
+    configScripts:
+      main: |
+        jenkins:
+          securityRealm:
+            local:
+              allowsSignup: false
+              users:
+                - id: "${JENKINS_ADMIN_USER}"
+                  password: "${JENKINS_ADMIN_PASSWORD}"
+          authorizationStrategy:
+            loggedInUsersCanDoAnything:
+              allowAnonymousRead: false
+          clouds:
+            - kubernetes:
+                name: "kubernetes"
+                serverUrl: "https://kubernetes.default"
+                skipTlsVerify: true
+                namespace: "jenkins"
+                jenkinsUrl: "http://jenkins:8080"
+                jenkinsTunnel: "jenkins-agent:50000"
+                containerCap: 10
+                connectTimeout: 5
+                readTimeout: 15
+                templates:
+                  - name: "default"
+                    label: "jenkins-agent"
+                    nodeUsageMode: NORMAL
+                    idleMinutes: 1
+                    containers:
+                      - name: jnlp
+                        image: "jenkins/inbound-agent:alpine"
+                        args: "${computer.jnlpmac} ${computer.name}"
+                        ttyEnabled: true
+                        resourceRequestCpu: "100m"
+                        resourceRequestMemory: "128Mi"
+
   sidecars:
     configAutoReload:
-      enabled: false
+      enabled: true
+
+  podAnnotations:
+    appArmorProfile: "unconfined"
+
+  volumes:
+    - name: docker-storage
+      emptyDir: {}
+    - name: docker-bin
+      emptyDir: {}
+
+  volumeMounts:
+    - name: docker-bin
+      mountPath: /usr/local/bin
 
 persistence:
   enabled: true
