@@ -157,14 +157,12 @@ Estos comandos borrarán todo lo que tenga que ver con Jenkins en tu clúster (p
 
 MIT © [https://github.com/vhgalvez]
 
-
 helm uninstall jenkins-local-k3d -n jenkins
 kubectl delete pvc --all -n jenkins
 kubectl delete ns jenkins
 kubectl get ns
 kubectl get pods -n jenkins -w
 kubectl get pvc -n jenkins
-
 
 Puedes hacerlo todo en un solo comando seguro:
 
@@ -174,9 +172,8 @@ kubectl create namespace jenkins --dry-run=client -o yaml | kubectl apply -f -
 kubectl -n jenkins create secret generic jenkins-admin \
   --from-literal=jenkins-admin-user=admin \
   --from-literal=jenkins-admin-password='123456'
-  
+
 ```
-  
 
 ```bash
 helm upgrade --install jenkins-local-k3d jenkins/jenkins \
@@ -184,7 +181,6 @@ helm upgrade --install jenkins-local-k3d jenkins/jenkins \
   -f jenkins-values.yaml
 
 ```
-
 
 🌐 Cómo acceder a Jenkins (web UI)
 🧩 Opción A – Usando port-forward (rápido y fácil)
@@ -195,8 +191,6 @@ kubectl port-forward -n jenkins svc/jenkins-local-k3d 8080:8080
 ```
 
 Luego abre tu navegador en:
-
-
 
 ```arduino
 http://localhost:8080
@@ -295,7 +289,6 @@ sudo chmod +x deploy_jenkins.sh
 
 kubectl get pods -n jenkins -w
 ```
-
 
 kubectl get ns
 
