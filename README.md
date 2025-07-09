@@ -166,23 +166,40 @@ kubectl get pods -n jenkins -w
 kubectl get pvc -n jenkins
 
 
+Puedes hacerlo todo en un solo comando seguro:
+
+```bash
+
+kubectl create namespace jenkins --dry-run=client -o yaml | kubectl apply -f -
+kubectl -n jenkins create secret generic jenkins-admin \
+  --from-literal=jenkins-admin-user=admin \
+  --from-literal=jenkins-admin-password='123456'
+  
+```
+  
+
+```bash
 helm upgrade --install jenkins-local-k3d jenkins/jenkins \
   -n jenkins --create-namespace \
   -f jenkins-values.yaml
 
-
-
-kubectl -n jenkins create secret generic jenkins-admin \
-  --from-literal=jenkins-admin-user=admin \
-  --from-literal=jenkins-admin-password='CambialaYa123!'
-
-
+```
 
 
 🌐 Cómo acceder a Jenkins (web UI)
 🧩 Opción A – Usando port-forward (rápido y fácil)
 Ejecuta este comando:
 
+```bash
+kubectl port-forward -n jenkins svc/jenkins-local-k3d 8080:8080
+```
+
+Luego abre tu navegador en:
+
+
+
+```arduino
+http://localhost:8080
 bash
 Copiar
 Editar
