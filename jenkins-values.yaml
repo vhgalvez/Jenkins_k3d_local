@@ -2,7 +2,7 @@
 controller:
   image:
     repository: jenkins/jenkins
-    tag: "2.452.2-jdk17"  # ✅ Corregido: compatible con los plugins más recientes
+    tag: "2.452.2-jdk17"  # ✅ Imagen oficial con Java 17
 
   admin:
     username: admin
@@ -38,27 +38,25 @@ controller:
         - name: docker-storage
           mountPath: /var/lib/docker
 
-    extraInitContainers:
+  initContainers:
     - name: install-docker-cli
       image: docker:24-cli
-      command: ["sh", "-c", "cp $(which docker) /binary/docker"]
+      command: ["sh", "-c", "cp $(which docker) /var/jenkins_home/bin/docker"]
       volumeMounts:
-        - name: docker-binary
-          mountPath: /binary
+        - name: jenkins-home
+          mountPath: /var/jenkins_home
+
+  podAnnotations:
+    # Evita errores de SELinux/AppArmor en algunos entornos
+    container.apparmor.security.beta.kubernetes.io/jenkins: unconfined
 
   volumes:
     - name: docker-storage
       emptyDir: {}
-    - name: docker-binary
-      emptyDir: {}
-
-  volumeMounts:
-    - name: docker-binary
-      mountPath: /binary
 
   containerEnv:
     - name: PATH
-      value: "/binary:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+      value: "/var/jenkins_home/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 persistence:
   enabled: true
