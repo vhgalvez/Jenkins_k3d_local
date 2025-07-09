@@ -53,8 +53,8 @@ controller:
                 serverUrl: "https://kubernetes.default"
                 skipTlsVerify: true
                 namespace: "jenkins"
-                jenkinsUrl: "http://jenkins.jenkins.svc.cluster.local:8080"
-                jenkinsTunnel: "jenkins-agent.jenkins.svc.cluster.local:50000"
+                jenkinsUrl: "http://jenkins-local-k3d:8080" # ✅ CORREGIDO
+                jenkinsTunnel: "jenkins-local-k3d-agent:50000" # ✅ CORREGIDO
                 containerCap: 10
                 connectTimeout: 5
                 readTimeout: 15
@@ -64,7 +64,7 @@ controller:
                     nodeUsageMode: "NORMAL"
                     idleMinutes: 1
                     containers:
-                      - name: "jnlp"
+                      - name: jnlp
                         image: "jenkins/inbound-agent:alpine"
                         args: "${computer.jnlpmac} ${computer.name}"
                         ttyEnabled: true
@@ -112,6 +112,5 @@ persistence:
   size: 8Gi
 
 service:
-  type: NodePort
-  nodePort: 32000
-  agentListenerPort: 50000  # <- Muy importante para el JNLP
+  type: ClusterIP   # ✅ Usa ClusterIP para entornos internos de K3d
+  agentListenerPort: 50000  # ✅ Necesario para el túnel JNLP
