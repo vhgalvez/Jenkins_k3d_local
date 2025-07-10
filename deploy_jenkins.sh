@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Verificar existencia del archivo .env
+if [[ ! -f .env ]]; then
+  echo "❌ Archivo .env no encontrado. Crea uno con tus credenciales."
+  exit 1
+fi
+
 # Cargar variables del entorno
 set -a
 source .env
@@ -40,14 +46,20 @@ kubectl create secret generic dockerhub-credentials \
   --from-literal=password="$DOCKERHUB_TOKEN" \
   -n "$NAMESPACE"
 
-# 5. Desplegar Jenkins con Helm
+# 5. Asegurar que el repo está disponible
+if ! helm repo list | grep -q jenkins; then
+  echo "➕ Añadiendo repositorio Jenkins..."
+  helm repo add jenkins https://charts.jenkins.io
+fi
+
+# 6. Desplegar Jenkins con Helm
 echo "📦 Instalando Jenkins con Helm..."
 helm repo update
 helm upgrade --install "$RELEASE" "$CHART" \
   -n "$NAMESPACE" \
   -f "$VALUES_FILE"
 
-# 6. Esperar rollout
+# 7. Esperar rollout
 echo "⏳ Esperando a que Jenkins esté listo..."
 sleep 10
 if ! kubectl rollout status statefulset/"$RELEASE" -n "$NAMESPACE" --timeout=5m; then
@@ -57,13 +69,13 @@ if ! kubectl rollout status statefulset/"$RELEASE" -n "$NAMESPACE" --timeout=5m;
   exit 1
 fi
 
-# 7. Mostrar info y abrir port-forward
+# 8. Mostrar info y abrir port-forward
 echo "✅ Jenkins está UP. Pods:"
 kubectl get pods -n "$NAMESPACE"
 
 cat <<EOF
 
-🌐 Abre en tu navegador:
+🌐 Accede a Jenkins:
     http://localhost:8080
 
 👤 Usuario: $JENKINS_ADMIN_USER  
