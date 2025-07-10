@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Cargar variables del entorno
+set -a
+source .env
+set +a
+
 NAMESPACE="jenkins"
 RELEASE="jenkins-local-k3d"
 CHART="jenkins/jenkins"
 VALUES_FILE="$HOME/projects/Jenkins_k3d_local/jenkins-values.yaml"
-ADMIN_USER="admin"
-ADMIN_PASS="123456"
 
 # 1. Limpieza condicional
 if helm status "$RELEASE" -n "$NAMESPACE" &>/dev/null; then
@@ -21,22 +24,30 @@ fi
 echo "🚀 Creando namespace '$NAMESPACE'..."
 kubectl create namespace "$NAMESPACE"
 
-# 3. (Re)Crear Secret
+# 3. Crear Secret jenkins-admin
 echo "🔑 Creando Secret 'jenkins-admin'..."
 kubectl delete secret jenkins-admin -n "$NAMESPACE" --ignore-not-found
 kubectl create secret generic jenkins-admin \
-  --from-literal=jenkins-admin-user="$ADMIN_USER" \
-  --from-literal=jenkins-admin-password="$ADMIN_PASS" \
+  --from-literal=jenkins-admin-user="$JENKINS_ADMIN_USER" \
+  --from-literal=jenkins-admin-password="$JENKINS_ADMIN_PASSWORD" \
   -n "$NAMESPACE"
 
-# 4. Desplegar con Helm
+# 4. Crear Secret dockerhub-credentials
+echo "🐳 Creando Secret 'dockerhub-credentials'..."
+kubectl delete secret dockerhub-credentials -n "$NAMESPACE" --ignore-not-found
+kubectl create secret generic dockerhub-credentials \
+  --from-literal=username="$DOCKERHUB_USERNAME" \
+  --from-literal=password="$DOCKERHUB_TOKEN" \
+  -n "$NAMESPACE"
+
+# 5. Desplegar Jenkins con Helm
 echo "📦 Instalando Jenkins con Helm..."
 helm repo update
 helm upgrade --install "$RELEASE" "$CHART" \
   -n "$NAMESPACE" \
   -f "$VALUES_FILE"
 
-# 5. Esperar rollout
+# 6. Esperar rollout
 echo "⏳ Esperando a que Jenkins esté listo..."
 sleep 10
 if ! kubectl rollout status statefulset/"$RELEASE" -n "$NAMESPACE" --timeout=5m; then
@@ -46,7 +57,7 @@ if ! kubectl rollout status statefulset/"$RELEASE" -n "$NAMESPACE" --timeout=5m;
   exit 1
 fi
 
-# 6. Mostrar info y abrir port-forward
+# 7. Mostrar info y abrir port-forward
 echo "✅ Jenkins está UP. Pods:"
 kubectl get pods -n "$NAMESPACE"
 
@@ -55,8 +66,8 @@ cat <<EOF
 🌐 Abre en tu navegador:
     http://localhost:8080
 
-👤 Usuario: $ADMIN_USER  
-🔒 Contraseña: $ADMIN_PASS  
+👤 Usuario: $JENKINS_ADMIN_USER  
+🔒 Contraseña: $JENKINS_ADMIN_PASSWORD  
 
 (🔁 Ctrl+C para cerrar el port-forward)
 
