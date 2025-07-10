@@ -216,6 +216,20 @@ kubectl exec -it -n jenkins jenkins-local-k3d-0 -- docker version
     kubectl get pods -n jenkins -w
     ```
 
+## 📝 Cómo crear un token de acceso para Docker Hub
+
+Para poder hacer push de imágenes a Docker Hub desde Jenkins, necesitas un token de acceso. Aquí te explico cómo crearlo de forma sencilla y rápida:
+
+1. Inicias sesión en tu cuenta de Docker Hub (gratuita o de pago).
+
+2. Vas a Account Settings → Security → +New Access Token.
+
+3. Asignas un nombre y permisos (por ejemplo, Read & Write).
+
+4. Generas el token, lo copias y lo guardas.
+
+5. En Jenkins, vas a Manage Jenkins → Manage Credentials → (seleccionas el dominio global o el que necesites) → Add Credentials.
+
 ## 📜 Licencia
 
-MIT © [https://github.com/vhgalvez]
+MIT © [https://github.com/vhgalvez](https://github.com/vhgalvez)
