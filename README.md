@@ -142,79 +142,79 @@ kubectl exec -it -n jenkins jenkins-local-k3d-0 -- docker version
 
 1. Detén cualquier port-forward que tengas abierto:
 
-    ```bash
-    Ctrl-C en la terminal
-    ```
+   ```bash
+   Ctrl-C en la terminal
+   ```
 
 2. Ver qué releases de Helm existen:
 
-    ```bash
-    helm list -A | grep jenkins
-    ```
+   ```bash
+   helm list -A | grep jenkins
+   ```
 
-    Ejemplo de salida:
+   Ejemplo de salida:
 
-    ```
-    NAME                NAMESPACE   REVISION    STATUS      CHART           APP VERSION
-    jenkins-local-k3d  jenkins     1           deployed    jenkins-5.1.12  2.452.2
-    ```
+   ```
+   NAME                NAMESPACE   REVISION    STATUS      CHART           APP VERSION
+   jenkins-local-k3d  jenkins     1           deployed    jenkins-5.1.12  2.452.2
+   ```
 
-    Toma nota del NAME y NAMESPACE (en el ejemplo, jenkins-local-k3d y jenkins).
+   Toma nota del NAME y NAMESPACE (en el ejemplo, jenkins-local-k3d y jenkins).
 
 3. Desinstalar el release de Helm:
 
-    ```bash
-    helm uninstall jenkins-local-k3d -n jenkins
-    ```
+   ```bash
+   helm uninstall jenkins-local-k3d -n jenkins
+   ```
 
-    Esto borra el StatefulSet, Service, ConfigMaps, Secrets, etc. creados por el chart.
+   Esto borra el StatefulSet, Service, ConfigMaps, Secrets, etc. creados por el chart.
 
 4. (Opcional) Borrar el namespace completo:
 
-    Solo si dentro del namespace jenkins no tienes otros recursos que quieras conservar.
+   Solo si dentro del namespace jenkins no tienes otros recursos que quieras conservar.
 
-    ```bash
-    kubectl delete namespace jenkins
-    ```
+   ```bash
+   kubectl delete namespace jenkins
+   ```
 
 5. (Opcional) Eliminar volúmenes persistentes:
 
-    Si mantuviste `persistence.enabled: true`, se habrá creado un PVC/PV con local-path. Para limpiarlo:
+   Si mantuviste `persistence.enabled: true`, se habrá creado un PVC/PV con local-path. Para limpiarlo:
 
-    ```bash
-    # Buscar los PVC que aún existan
-    kubectl get pvc -A | grep jenkins
+   ```bash
+   # Buscar los PVC que aún existan
+   kubectl get pvc -A | grep jenkins
 
-    # Ejemplo de salida
-    # jenkins jenkins-local-k3d Bound pvc-xyz123 4Gi RWO local-path 2d
+   # Ejemplo de salida
+   # jenkins jenkins-local-k3d Bound pvc-xyz123 4Gi RWO local-path 2d
 
-    # Borrar el PVC y su PV asociado
-    kubectl delete pvc jenkins-local-k3d -n jenkins
-    ```
+   # Borrar el PVC y su PV asociado
+   kubectl delete pvc jenkins-local-k3d -n jenkins
+   ```
 
-    El PV local-path asociado se eliminará automáticamente. Si ya eliminaste el namespace, los PVC/PV del mismo namespace se eliminan de forma automática.
+   El PV local-path asociado se eliminará automáticamente. Si ya eliminaste el namespace, los PVC/PV del mismo namespace se eliminan de forma automática.
 
 6. Verificar que no queda nada:
 
-    ```bash
-    helm list -A | grep jenkins # → debería no mostrar nada
-    kubectl get pods -A | grep jenkins # → sin resultados
-    kubectl get pv | grep jenkins # → sin resultados
-    ```
+   ```bash
+   helm list -A | grep jenkins # → debería no mostrar nada
+   kubectl get pods -A | grep jenkins # → sin resultados
+   kubectl get pv | grep jenkins # → sin resultados
+   ```
 
 7. Instala de nuevo con el YAML corregido:
 
-    ```bash
-    helm upgrade --install jenkins-local-k3d jenkins/jenkins \
-      -n jenkins --create-namespace \
-      -f jenkins-values.yaml
-    ```
+   ```bash
+   helm upgrade --install jenkins-local-k3d jenkins/jenkins \
+     -n jenkins --create-namespace \
+     -f jenkins-values.yaml
+   ```
 
 8. Sigue el log del pod hasta que pase a Running:
 
-    ```bash
-    kubectl get pods -n jenkins -w
-    ```
+   ```bash
+   kubectl get pods -n jenkins -w
+   ```
 
 ## 📝 Cómo crear un token de acceso para Docker Hub
 
