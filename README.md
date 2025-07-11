@@ -252,11 +252,13 @@ sudo nano .env
 ```
 
 # .env
-
-DOCKERHUB_USERNAME=vhgalvez
-DOCKERHUB_TOKEN=tu_token_de_docker_hub
 JENKINS_ADMIN_USER=admin
-JENKINS_ADMIN_PASSWORD=123456
+JENKINS_ADMIN_PASSWORD=admin123
+DOCKERHUB_USERNAME=vhgalvez
+DOCKERHUB_TOKEN=xxxxxxxxxxxxxxxx
+GITHUB_USERNAME=vhgalvez
+GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxx
+
 
 ```bash
 kubectl create secret generic dockerhub-credentials \
