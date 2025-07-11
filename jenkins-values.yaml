@@ -1,9 +1,9 @@
 # jenkins-values.yaml
 controller:
   image:
-    repository: jenkins-custom # Cambiar a tu imagen personalizada
-    tag: "2.504.3-jdk17" # Asegúrate de que el tag coincida con el de la imagen personalizada
-    pullPolicy: IfNotPresent # Usar IfNotPresent (bueno para entornos locales) o Always (bueno para actualizaciones)
+    repository: jenkins/jenkins
+    tag: "2.504.3-jdk17"
+    pullPolicy: IfNotPresent
 
   admin:
     existingSecret: jenkins-admin
@@ -36,6 +36,18 @@ controller:
         secretKeyRef:
           name: github-ci-token
           key: token
+
+  installPlugins:
+    - kubernetes
+    - workflow-aggregator
+    - git
+    - docker-workflow
+    - docker-commons
+    - blueocean
+    - credentials # Explicitly list 'credentials' plugin
+    - credentials-binding
+    - configuration-as-code
+    - plain-credentials # Explicitly list 'plain-credentials' plugin
 
   JCasC:
     enabled: true
