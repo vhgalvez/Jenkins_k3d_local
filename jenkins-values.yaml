@@ -5,17 +5,11 @@ controller:
     tag: "2.504.3-jdk17"
     pullPolicy: IfNotPresent
 
-  # ----------------------------------------
-  # Credenciales de administrador (via Secret)
-  # ----------------------------------------
   admin:
     existingSecret: jenkins-admin
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
-  # ----------------------------------------
-  # Variables de entorno cargadas desde Secrets
-  # ----------------------------------------
   containerEnv:
     - name: JENKINS_ADMIN_USER
       valueFrom:
@@ -38,9 +32,6 @@ controller:
           name: dockerhub-credentials
           key: password
 
-  # ----------------------------------------
-  # Plugins necesarios
-  # ----------------------------------------
   installPlugins:
     - kubernetes
     - workflow-aggregator
@@ -52,9 +43,6 @@ controller:
     - credentials-binding
     - configuration-as-code
 
-  # ----------------------------------------
-  # Jenkins Configuration as Code (JCasC)
-  # ----------------------------------------
   JCasC:
     enabled: true
     defaultConfig: false
@@ -98,16 +86,15 @@ controller:
                         resourceLimitCpu: "500m"
                         resourceLimitMemory: "512Mi"
 
-        unclassified:
-          credentials:
-            system:
-              domainCredentials:
-                - credentials:
-                    - usernamePassword:
-                        id: "dockerhub-credentials"
-                        username: "${DOCKERHUB_USERNAME}"
-                        password: "${DOCKERHUB_TOKEN}"
-                        description: "DockerHub Access Token for CI/CD"
+        credentials:
+          system:
+            domainCredentials:
+              - credentials:
+                  - usernamePassword:
+                      id: "dockerhub-credentials"
+                      username: "${DOCKERHUB_USERNAME}"
+                      password: "${DOCKERHUB_TOKEN}"
+                      description: "DockerHub Access Token for CI/CD"
 
   sidecars:
     configAutoReload:
@@ -130,9 +117,6 @@ controller:
     - name: docker-bin
       mountPath: /usr/local/bin
 
-# --------------------------------------------------------------------
-# Configuración del agente por defecto que lanza el Cloud de Kubernetes
-# --------------------------------------------------------------------
 agent:
   podName: "jenkins-agent"
   customJenkinsLabels:
@@ -145,17 +129,11 @@ agent:
   connectTimeout: 100
   runAsUser: 1000
 
-# -------------------
-# Almacenamiento local
-# -------------------
 persistence:
   enabled: true
   storageClass: local-path
   size: 8Gi
 
-# -------------
-# Servicio K3d
-# -------------
 service:
   type: ClusterIP
   agentListenerPort: 50000
