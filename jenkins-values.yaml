@@ -31,6 +31,16 @@ controller:
         secretKeyRef:
           name: dockerhub-credentials
           key: password
+    - name: GITHUB_USERNAME
+      valueFrom:
+        secretKeyRef:
+          name: github-ci-token
+          key: username
+    - name: GITHUB_TOKEN
+      valueFrom:
+        secretKeyRef:
+          name: github-ci-token
+          key: token
 
   installPlugins:
     - kubernetes
@@ -95,6 +105,11 @@ controller:
                       username: "${DOCKERHUB_USERNAME}"
                       password: "${DOCKERHUB_TOKEN}"
                       description: "DockerHub Access Token for CI/CD"
+                  - usernamePassword:
+                      id: "github-ci-token"
+                      username: "${GITHUB_USERNAME}"
+                      password: "${GITHUB_TOKEN}"
+                      description: "GitHub Token para Push desde Jenkins"
 
   sidecars:
     configAutoReload:
