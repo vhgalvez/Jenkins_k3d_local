@@ -44,7 +44,8 @@ controller:
     - docker-workflow
     - blueocean
     - configuration-as-code
-    - credentials-binding # Plugin necesario para manejar `secretText`
+    - credentials-binding:1.32 # Especifica una versión para asegurar compatibilidad
+    # El plugin `credentials-binding` es crucial para que JCasC pueda manejar 'secretText' y otros tipos de credenciales.
 
   JCasC:
     enabled: true
