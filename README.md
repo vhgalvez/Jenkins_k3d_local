@@ -268,6 +268,38 @@ kubectl create secret generic dockerhub-credentials \
 Sustituye TU_TOKEN_DE_DOCKER_HUB por el token generado desde:
 https://hub.docker.com/settings/security
 
+
+
+
+En Jenkins:
+
+Ve a "Dashboard" > "Manage Jenkins" > "Credentials".
+
+Selecciona el almacenamiento global (ej. (global)).
+
+Agrega una nueva credencial de tipo:
+
+"Username with password":
+
+Username: tu nombre de usuario de GitHub (o un token ghp_*** como username).
+
+Password: un GitHub personal access token (PAT) con permisos de repo y workflow.
+
+O mejor aún, usa tipo "Secret Text" si solo necesitas el token.
+
+Asigna un ID como: github-ci-token
+
+
+
+
 ## 📜 Licencia
 
 MIT © [https://github.com/vhgalvez](https://github.com/vhgalvez)
+
+
+
+
+
+
+
+

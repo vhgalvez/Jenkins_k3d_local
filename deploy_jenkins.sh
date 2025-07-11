@@ -34,32 +34,40 @@ kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -
 echo "🔑 Creando Secret 'jenkins-admin'..."
 kubectl delete secret jenkins-admin -n "$NAMESPACE" --ignore-not-found
 kubectl create secret generic jenkins-admin \
---from-literal=jenkins-admin-user="$JENKINS_ADMIN_USER" \
---from-literal=jenkins-admin-password="$JENKINS_ADMIN_PASSWORD" \
--n "$NAMESPACE"
+  --from-literal=jenkins-admin-user="$JENKINS_ADMIN_USER" \
+  --from-literal=jenkins-admin-password="$JENKINS_ADMIN_PASSWORD" \
+  -n "$NAMESPACE"
 
 # 4. Crear Secret dockerhub-credentials
 echo "🐳 Creando Secret 'dockerhub-credentials'..."
 kubectl delete secret dockerhub-credentials -n "$NAMESPACE" --ignore-not-found
 kubectl create secret generic dockerhub-credentials \
---from-literal=username="$DOCKERHUB_USERNAME" \
---from-literal=password="$DOCKERHUB_TOKEN" \
--n "$NAMESPACE"
+  --from-literal=username="$DOCKERHUB_USERNAME" \
+  --from-literal=password="$DOCKERHUB_TOKEN" \
+  -n "$NAMESPACE"
 
-# 5. Asegurar que el repo Helm esté añadido
+# 5. Crear Secret GitHub CI Token
+echo "🔐 Creando Secret 'github-ci-token'..."
+kubectl delete secret github-ci-token -n "$NAMESPACE" --ignore-not-found
+kubectl create secret generic github-ci-token \
+  --from-literal=username="$GITHUB_USERNAME" \
+  --from-literal=token="$GITHUB_TOKEN" \
+  -n "$NAMESPACE"
+
+# 6. Asegurar que el repo Helm esté añadido
 if ! helm repo list | grep -qE '^jenkins\s'; then
     echo "➕ Añadiendo repositorio Jenkins..."
     helm repo add jenkins https://charts.jenkins.io
 fi
 
-# 6. Instalar Jenkins con Helm
+# 7. Instalar Jenkins con Helm
 echo "📦 Instalando Jenkins con Helm..."
 helm repo update
 helm upgrade --install "$RELEASE" "$CHART" \
--n "$NAMESPACE" \
--f "$VALUES_FILE"
+  -n "$NAMESPACE" \
+  -f "$VALUES_FILE"
 
-# 7. Esperar a que Jenkins esté listo
+# 8. Esperar a que Jenkins esté listo
 echo "⏳ Esperando a que Jenkins esté listo..."
 sleep 10
 if ! kubectl rollout status statefulset/"$RELEASE" -n "$NAMESPACE" --timeout=5m; then
@@ -69,7 +77,7 @@ if ! kubectl rollout status statefulset/"$RELEASE" -n "$NAMESPACE" --timeout=5m;
     exit 1
 fi
 
-# 8. Mostrar acceso y port-forward
+# 9. Mostrar acceso y port-forward
 echo "✅ Jenkins está listo. Pods:"
 kubectl get pods -n "$NAMESPACE"
 
