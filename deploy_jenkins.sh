@@ -17,68 +17,70 @@ RELEASE="jenkins-local-k3d"
 CHART="jenkins/jenkins"
 VALUES_FILE="$HOME/projects/Jenkins_k3d_local/jenkins-values.yaml"
 
-# 1. Limpieza previa
+# 1. Eliminar Jenkins si existe
+echo "🔍 Verificando si Jenkins ya está desplegado..."
 if helm status "$RELEASE" -n "$NAMESPACE" &>/dev/null; then
-    echo "🗑️  Desinstalando release existente..."
-    helm uninstall "$RELEASE" -n "$NAMESPACE"
-    echo "🧼 Eliminando PVCs y namespace..."
+    echo "🗑️  Desinstalando Jenkins existente..."
+    helm uninstall "$RELEASE" -n "$NAMESPACE" || true
+    
+    echo "🧹 Eliminando PVCs asociados..."
     kubectl delete pvc -l app.kubernetes.io/instance="$RELEASE" -n "$NAMESPACE" --ignore-not-found
+    
+    echo "🧼 Eliminando namespace '$NAMESPACE'..."
     kubectl delete namespace "$NAMESPACE" --ignore-not-found
+    
+    echo "⏳ Esperando a que el namespace se elimine completamente..."
+    while kubectl get namespace "$NAMESPACE" &>/dev/null; do
+        sleep 2
+    done
 fi
 
-# 2. Crear namespace si no existe
+# 2. Crear namespace
 echo "🚀 Creando namespace '$NAMESPACE'..."
 kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 
-# 3. Crear Secret jenkins-admin
-echo "🔑 Creando Secret 'jenkins-admin'..."
-kubectl delete secret jenkins-admin -n "$NAMESPACE" --ignore-not-found
+# 3. Crear Secrets
+echo "🔑 (Re)Creando secretos necesarios..."
 kubectl create secret generic jenkins-admin \
-  --from-literal=jenkins-admin-user="$JENKINS_ADMIN_USER" \
-  --from-literal=jenkins-admin-password="$JENKINS_ADMIN_PASSWORD" \
-  -n "$NAMESPACE"
+--from-literal=jenkins-admin-user="$JENKINS_ADMIN_USER" \
+--from-literal=jenkins-admin-password="$JENKINS_ADMIN_PASSWORD" \
+-n "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 
-# 4. Crear Secret dockerhub-credentials
-echo "🐳 Creando Secret 'dockerhub-credentials'..."
-kubectl delete secret dockerhub-credentials -n "$NAMESPACE" --ignore-not-found
 kubectl create secret generic dockerhub-credentials \
-  --from-literal=username="$DOCKERHUB_USERNAME" \
-  --from-literal=password="$DOCKERHUB_TOKEN" \
-  -n "$NAMESPACE"
+--from-literal=username="$DOCKERHUB_USERNAME" \
+--from-literal=password="$DOCKERHUB_TOKEN" \
+-n "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 
-# 5. Crear Secret GitHub CI Token
-echo "🔐 Creando Secret 'github-ci-token'..."
-kubectl delete secret github-ci-token -n "$NAMESPACE" --ignore-not-found
 kubectl create secret generic github-ci-token \
-  --from-literal=username="$GITHUB_USERNAME" \
-  --from-literal=token="$GITHUB_TOKEN" \
-  -n "$NAMESPACE"
+--from-literal=username="$GITHUB_USERNAME" \
+--from-literal=token="$GITHUB_TOKEN" \
+-n "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 
-# 6. Asegurar que el repo Helm esté añadido
+# 4. Asegurar repositorio Helm de Jenkins
 if ! helm repo list | grep -qE '^jenkins\s'; then
-    echo "➕ Añadiendo repositorio Jenkins..."
+    echo "➕ Añadiendo repositorio Helm de Jenkins..."
     helm repo add jenkins https://charts.jenkins.io
 fi
-
-# 7. Instalar Jenkins con Helm
-echo "📦 Instalando Jenkins con Helm..."
 helm repo update
-helm upgrade --install "$RELEASE" "$CHART" \
-  -n "$NAMESPACE" \
-  -f "$VALUES_FILE"
 
-# 8. Esperar a que Jenkins esté listo
-echo "⏳ Esperando a que Jenkins esté listo..."
+# 5. Instalar Jenkins
+echo "📦 Instalando Jenkins con Helm..."
+helm upgrade --install "$RELEASE" "$CHART" \
+-n "$NAMESPACE" \
+-f "$VALUES_FILE"
+
+# 6. Esperar que Jenkins esté listo
+echo "⏳ Esperando rollout de Jenkins..."
 sleep 10
 if ! kubectl rollout status statefulset/"$RELEASE" -n "$NAMESPACE" --timeout=5m; then
-    echo "⚠️  Error en el despliegue. Logs del pod:"
+    echo "⚠️  Error en el despliegue. Logs:"
     kubectl get pods -n "$NAMESPACE"
     kubectl logs -n "$NAMESPACE" pod/"$RELEASE"-0 -c jenkins || true
     exit 1
 fi
 
-# 9. Mostrar acceso y port-forward
-echo "✅ Jenkins está listo. Pods:"
+# 7. Mostrar acceso y abrir port-forward
+echo "✅ Jenkins desplegado correctamente. Pods:"
 kubectl get pods -n "$NAMESPACE"
 
 cat <<EOF
