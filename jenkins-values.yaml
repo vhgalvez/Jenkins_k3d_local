@@ -1,8 +1,8 @@
 # jenkins-values.yaml
 controller:
   image:
-    repository: jenkins/jenkins
-    tag: "2.504.3-jdk17"
+    repository: tu-imagen-personalizada-jenkins # Cambia esto al nombre de tu imagen personalizada
+    tag: "2.505.0-jdk17" # Asegúrate de usar la versión correcta
     pullPolicy: IfNotPresent
 
   admin:
@@ -37,17 +37,8 @@ controller:
           name: github-ci-token
           key: token
 
-  installPlugins:
-    - kubernetes
-    - workflow-aggregator
-    - git
-    - docker-workflow
-    - docker-commons
-    - blueocean
-    - credentials # Explicitly list 'credentials' plugin
-    - credentials-binding
-    - configuration-as-code
-    - plain-credentials # Explicitly list 'plain-credentials' plugin
+  # Eliminamos la sección 'installPlugins' porque los plugins ya están preinstalados en la imagen personalizada
+  installPlugins: []
 
   JCasC:
     enabled: true
