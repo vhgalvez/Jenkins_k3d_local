@@ -2,7 +2,7 @@
 controller:
   image:
     repository: jenkins/jenkins
-    tag: "2.303.1-jdk11"
+    tag: "2.504-jdk21"
     pullPolicy: IfNotPresent
 
   admin:
