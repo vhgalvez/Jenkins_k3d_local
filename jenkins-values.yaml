@@ -14,7 +14,7 @@ controller:
     passwordKey: jenkins-admin-password
 
   # ----------------------------------------
-  # Variables de entorno que toma de Secrets
+  # Variables de entorno cargadas desde Secrets
   # ----------------------------------------
   containerEnv:
     - name: JENKINS_ADMIN_USER
@@ -45,8 +45,8 @@ controller:
     - kubernetes
     - workflow-aggregator
     - git
-    - docker-workflow # pasos docker build/push
-    - docker-commons # librería de credenciales Docker
+    - docker-workflow
+    - docker-commons
     - blueocean
     - credentials
     - credentials-binding
@@ -72,18 +72,6 @@ controller:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
 
-          # ---- Credenciales Docker Hub ----
-          credentials:
-            system:
-              domainCredentials:
-                - credentials:
-                    - usernamePassword:
-                        id: "dockerhub-credentials"
-                        username: "${DOCKERHUB_USERNAME}"
-                        password: "${DOCKERHUB_TOKEN}"
-                        description: "DockerHub Access Token for CI/CD"
-
-          # ---- Cloud Kubernetes para los agentes ----
           clouds:
             - kubernetes:
                 name: "kubernetes"
@@ -110,9 +98,17 @@ controller:
                         resourceLimitCpu: "500m"
                         resourceLimitMemory: "512Mi"
 
-  # ----------------------------------------
-  # Otros ajustes del chart
-  # ----------------------------------------
+        unclassified:
+          credentials:
+            system:
+              domainCredentials:
+                - credentials:
+                    - usernamePassword:
+                        id: "dockerhub-credentials"
+                        username: "${DOCKERHUB_USERNAME}"
+                        password: "${DOCKERHUB_TOKEN}"
+                        description: "DockerHub Access Token for CI/CD"
+
   sidecars:
     configAutoReload:
       enabled: true
