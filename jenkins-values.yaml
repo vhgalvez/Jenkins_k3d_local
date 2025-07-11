@@ -91,19 +91,19 @@ controller:
                         resourceLimitCpu: "500m"
                         resourceLimitMemory: "512Mi"
 
-        credentials:
-          system:
-            domainCredentials:
-              - credentials:
-                  - usernamePassword:
-                      id: "dockerhub-credentials"
-                      username: "${DOCKERHUB_USERNAME}"
-                      password: "${DOCKERHUB_TOKEN}"
-                      description: "DockerHub Access Token for CI/CD"
-                  - secretText:
-                      id: "github-ci-token"
-                      secret: "${GITHUB_TOKEN}"
-                      description: "GitHub Token for Push from Jenkins"
+          credentials:
+            system:
+              domainCredentials:
+                - credentials:
+                    - usernamePassword:
+                        id: "dockerhub-credentials"
+                        username: "${DOCKERHUB_USERNAME}"
+                        password: "${DOCKERHUB_TOKEN}"
+                        description: "DockerHub Access Token for CI/CD"
+                    - secretText:
+                        id: "github-ci-token"
+                        secret: "${GITHUB_TOKEN}"
+                        description: "GitHub Token for Push from Jenkins"
 
   sidecars:
     configAutoReload:
