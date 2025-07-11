@@ -2,7 +2,7 @@
 controller:
   image:
     repository: jenkins/jenkins
-    tag: "2.518" # Actualiza a la última versión de Jenkins
+    tag: "2.518" # Última versión de Jenkins
     pullPolicy: IfNotPresent
 
   admin:
