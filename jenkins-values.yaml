@@ -2,7 +2,7 @@
 controller:
   image:
     repository: jenkins/jenkins
-    tag: "2.518-jdk21" # Última versión con JDK 21
+    tag: "2.518-jdk21"
     pullPolicy: IfNotPresent
 
   admin:
@@ -54,24 +54,24 @@ controller:
         jenkins:
           securityRealm:
             local:
-              allowsSignup: false
-              enableCaptcha: false
+              allowsSignup: false  # Deshabilita el registro de nuevos usuarios
+              enableCaptcha: false  # Deshabilita el CAPTCHA
               users:
                 - id: "${JENKINS_ADMIN_USER}"
                   password: "${JENKINS_ADMIN_PASSWORD}"
 
           authorizationStrategy:
             loggedInUsersCanDoAnything:
-              allowAnonymousRead: false
+              allowAnonymousRead: false  # Deshabilita el acceso anónimo
 
           clouds:
             - kubernetes:
                 name: "kubernetes"
                 serverUrl: "https://kubernetes.default"
-                skipTlsVerify: true
+                skipTlsVerify: true  # Esto es útil en entornos de desarrollo/pruebas. Para producción, considera un CA de confianza.
                 namespace: "jenkins"
-                jenkinsUrl: "http://jenkins-local-k3d:8080"
-                jenkinsTunnel: "jenkins-local-k3d-agent:50000"
+                jenkinsUrl: "http://jenkins-local-k3d:8080" # URL del servicio Jenkins dentro del clúster
+                jenkinsTunnel: "jenkins-local-k3d-agent:50000" # URL del agente de Jenkins
                 containerCap: 10
                 connectTimeout: 5
                 readTimeout: 15
@@ -83,7 +83,7 @@ controller:
                     containers:
                       - name: jnlp
                         image: "jenkins/inbound-agent:alpine"
-                        args: "${computer.jnlpmac} ${computer.name}"
+                        args: "${computer.jnlpmac} ${computer.name}" # Argumentos para conectar el agente
                         ttyEnabled: true
                         resourceRequestCpu: "100m"
                         resourceRequestMemory: "128Mi"
@@ -106,7 +106,7 @@ controller:
 
   sidecars:
     configAutoReload:
-      enabled: true
+      enabled: true # Habilita el sidecar para recargar JCasC automáticamente
 
   securityContext:
     runAsUser: 1000
