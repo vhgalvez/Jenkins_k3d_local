@@ -32,7 +32,6 @@ create_secrets() {
     -n "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 
     kubectl create secret generic github-ci-token \
-    --from-literal=username="$GITHUB_USERNAME" \
     --from-literal=token="$GITHUB_TOKEN" \
     -n "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 }
