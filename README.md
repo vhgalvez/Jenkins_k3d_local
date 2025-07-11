@@ -238,14 +238,12 @@ Para poder hacer push de imágenes a Docker Hub desde Jenkins, necesitas un toke
 sudo nano .env
 ```
 
-
 # .env
+
 DOCKERHUB_USERNAME=vhgalvez
 DOCKERHUB_TOKEN=tu_token_de_docker_hub
 JENKINS_ADMIN_USER=admin
 JENKINS_ADMIN_PASSWORD=123456
-
-
 
 ```bash
 kubectl create secret generic dockerhub-credentials \
@@ -256,9 +254,6 @@ kubectl create secret generic dockerhub-credentials \
 
 Sustituye TU_TOKEN_DE_DOCKER_HUB por el token generado desde:
 https://hub.docker.com/settings/security
-
-
-
 
 ## 📜 Licencia
 
