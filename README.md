@@ -250,8 +250,6 @@ Para poder hacer push de imágenes a Docker Hub desde Jenkins, necesitas un toke
 sudo nano .env
 ```
 
-
-
 . env
 # Jenkins Admin
 JENKINS_ADMIN_USER=admin
