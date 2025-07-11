@@ -2,7 +2,7 @@
 controller:
   image:
     repository: jenkins/jenkins
-    tag: "2.518-jdk21"
+    tag: "2.518-jdk21" # Última versión con JDK 21
     pullPolicy: IfNotPresent
 
   admin:
@@ -47,14 +47,15 @@ controller:
         jenkins:
           securityRealm:
             local:
-              allowsSignup: false
+              allowsSignup: false  # Deshabilita el registro de nuevos usuarios
+              enableCaptcha: false  # Deshabilita el CAPTCHA
               users:
                 - id: "${JENKINS_ADMIN_USER}"
                   password: "${JENKINS_ADMIN_PASSWORD}"
 
           authorizationStrategy:
             loggedInUsersCanDoAnything:
-              allowAnonymousRead: false
+              allowAnonymousRead: false  # Deshabilita el acceso anónimo
 
           clouds:
             - kubernetes:
