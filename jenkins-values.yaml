@@ -103,7 +103,7 @@ controller:
                   - secretText:
                       id: "github-ci-token"
                       secret: "${GITHUB_TOKEN}"
-                      description: "GitHub Token para Push desde Jenkins"
+                      description: "GitHub Token for Push from Jenkins"
 
   sidecars:
     configAutoReload:
