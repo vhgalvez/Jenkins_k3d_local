@@ -37,14 +37,16 @@ controller:
           name: github-ci-token
           key: token
 
+  # --- CORRECCIÓN 1: Versiones de plugins fijadas ---
   installPlugins:
-    - kubernetes
-    - workflow-aggregator
-    - git
-    - docker-workflow
-    - blueocean
-    - configuration-as-code
-    - credentials-binding
+    - kubernetes:4201.v7a_c54b_a_24151
+    - workflow-aggregator:2.7
+    - git:5.2.2
+    - docker-workflow:578.v2b_d19b_853031
+    - blueocean:1.27.12
+    - configuration-as-code:2063.v43d90f230449
+    - credentials-binding:687.v619cb_15e923f
+    - plain-credentials:195.vb_906e9073dee
 
   JCasC:
     enabled: true
@@ -54,24 +56,25 @@ controller:
         jenkins:
           securityRealm:
             local:
-              allowsSignup: false  # Deshabilita el registro de nuevos usuarios
-              enableCaptcha: false  # Deshabilita el CAPTCHA
+              allowsSignup: false
+              enableCaptcha: false
               users:
                 - id: "${JENKINS_ADMIN_USER}"
                   password: "${JENKINS_ADMIN_PASSWORD}"
 
           authorizationStrategy:
             loggedInUsersCanDoAnything:
-              allowAnonymousRead: false  # Deshabilita el acceso anónimo
+              allowAnonymousRead: false
 
           clouds:
             - kubernetes:
                 name: "kubernetes"
                 serverUrl: "https://kubernetes.default"
-                skipTlsVerify: true  # Esto es útil en entornos de desarrollo/pruebas. Para producción, considera un CA de confianza.
+                skipTlsVerify: true
                 namespace: "jenkins"
-                jenkinsUrl: "http://jenkins-local-k3d:8080" # URL del servicio Jenkins dentro del clúster
-                jenkinsTunnel: "jenkins-local-k3d-agent:50000" # URL del agente de Jenkins
+                # --- CORRECCIÓN 2: Nombres de servicio dinámicos ---
+                jenkinsUrl: "http://{{ .Release.Name }}-jenkins:8080"
+                jenkinsTunnel: "{{ .Release.Name }}-jenkins-agent:50000"
                 containerCap: 10
                 connectTimeout: 5
                 readTimeout: 15
@@ -83,7 +86,7 @@ controller:
                     containers:
                       - name: jnlp
                         image: "jenkins/inbound-agent:alpine"
-                        args: "${computer.jnlpmac} ${computer.name}" # Argumentos para conectar el agente
+                        args: "${computer.jnlpmac} ${computer.name}"
                         ttyEnabled: true
                         resourceRequestCpu: "100m"
                         resourceRequestMemory: "128Mi"
@@ -106,14 +109,12 @@ controller:
 
   sidecars:
     configAutoReload:
-      enabled: true # Habilita el sidecar para recargar JCasC automáticamente
+      enabled: true
 
   securityContext:
     runAsUser: 1000
     runAsGroup: 1000
     fsGroup: 1000
-
-  podAnnotations: {}
 
   volumes:
     - name: docker-storage
