@@ -38,44 +38,40 @@ controller:
           key: token
 
   installPlugins:
-    # Especificamos versiones fijas para estos plugins para evitar el error de "Couldn't find checksum"
-    # Estas versiones son conocidas por ser estables con Jenkins 2.518-jdk21.
-    # Siempre puedes verificar las últimas versiones estables en plugins.jenkins.io
-    - kubernetes:4374.v140b_765a_1b_1d # Versión estable
-    - workflow-aggregator:1373.v7b_813f10efa_b_ # Versión estable
+    - kubernetes
+    - workflow-aggregator
     - git
     - docker-workflow
     - blueocean
     - configuration-as-code
-    - credentials-binding:1.32 # Mantener la versión específica para compatibilidad
-    # El plugin `credentials-binding` es crucial para que JCasC pueda manejar 'secretText' y otros tipos de credenciales.
+    - credentials-binding
 
   JCasC:
     enabled: true
-    defaultConfig: false # Mantener en false si quieres aplicar tu propia configuración CASC
+    defaultConfig: false
     configScripts:
       main: |
         jenkins:
           securityRealm:
             local:
-              allowsSignup: false  # Deshabilita el registro de nuevos usuarios
-              enableCaptcha: false # Deshabilita el CAPTCHA
+              allowsSignup: false
+              enableCaptcha: false
               users:
                 - id: "${JENKINS_ADMIN_USER}"
                   password: "${JENKINS_ADMIN_PASSWORD}"
 
           authorizationStrategy:
             loggedInUsersCanDoAnything:
-              allowAnonymousRead: false  # Deshabilita el acceso anónimo
+              allowAnonymousRead: false
 
           clouds:
             - kubernetes:
                 name: "kubernetes"
                 serverUrl: "https://kubernetes.default"
-                skipTlsVerify: true # Esto es útil en entornos de desarrollo/pruebas. Para producción, considera un CA de confianza.
+                skipTlsVerify: true
                 namespace: "jenkins"
-                jenkinsUrl: "http://jenkins-local-k3d:8080" # URL del servicio Jenkins dentro del clúster
-                jenkinsTunnel: "jenkins-local-k3d-agent:50000" # URL del agente de Jenkins
+                jenkinsUrl: "http://jenkins-local-k3d:8080"
+                jenkinsTunnel: "jenkins-local-k3d-agent:50000"
                 containerCap: 10
                 connectTimeout: 5
                 readTimeout: 15
@@ -87,7 +83,7 @@ controller:
                     containers:
                       - name: jnlp
                         image: "jenkins/inbound-agent:alpine"
-                        args: "${computer.jnlpmac} ${computer.name}" # Argumentos para conectar el agente
+                        args: "${computer.jnlpmac} ${computer.name}"
                         ttyEnabled: true
                         resourceRequestCpu: "100m"
                         resourceRequestMemory: "128Mi"
@@ -110,19 +106,15 @@ controller:
 
   sidecars:
     configAutoReload:
-      enabled: true # Habilita el sidecar para recargar JCasC automáticamente
+      enabled: true
 
   securityContext:
     runAsUser: 1000
     runAsGroup: 1000
     fsGroup: 1000
 
-  # PodAnnotations se deja vacío si no necesitas anotaciones específicas para el pod del controlador.
   podAnnotations: {}
 
-  # Estos volúmenes y montajes pueden ser necesarios si estás ejecutando operaciones de Docker-in-Docker
-  # o si tus agentes necesitan acceso a los binarios de Docker o sockets.
-  # Si no los necesitas, puedes eliminarlos.
   volumes:
     - name: docker-storage
       emptyDir: {}
@@ -147,7 +139,7 @@ agent:
 
 persistence:
   enabled: true
-  storageClass: local-path # Asegúrate de que esta StorageClass exista en tu clúster K3d
+  storageClass: local-path
   size: 8Gi
 
 service:
