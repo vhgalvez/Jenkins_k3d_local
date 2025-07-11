@@ -216,6 +216,19 @@ kubectl exec -it -n jenkins jenkins-local-k3d-0 -- docker version
    kubectl get pods -n jenkins -w
    ```
 
+## 🛠 Cómo desplegar Jenkins en K3d
+
+```bash
+sudo chmod +x deploy_jenkins.sh
+```
+
+Luego ejecuta el script para desplegar Jenkins en tu clúster K3d:
+
+```bash
+./deploy_jenkins.sh
+```
+
+
 ## 📝 Cómo crear un token de acceso para Docker Hub
 
 Para poder hacer push de imágenes a Docker Hub desde Jenkins, necesitas un token de acceso. Aquí te explico cómo crearlo de forma sencilla y rápida:
