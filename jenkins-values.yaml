@@ -2,7 +2,7 @@
 controller:
   image:
     repository: jenkins/jenkins
-    tag: "2.505.0-jdk17"
+    tag: "2.303.1-jdk11"
     pullPolicy: IfNotPresent
 
   admin:
@@ -37,8 +37,7 @@ controller:
           name: github-ci-token
           key: token
 
-  # Eliminamos la sección 'installPlugins' porque los plugins ya están preinstalados en la imagen personalizada
-  installPlugins: []
+  installPlugins: [] # Los plugins se asumen preinstalados
 
   JCasC:
     enabled: true
