@@ -47,6 +47,7 @@ controller:
     - credentials
     - credentials-binding
     - configuration-as-code
+    - plain-credentials # Ensure plain-credentials plugin is included!
 
   JCasC:
     enabled: true
