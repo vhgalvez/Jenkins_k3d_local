@@ -258,12 +258,10 @@ JENKINS_ADMIN_USER=admin
 JENKINS_ADMIN_PASSWORD=admin1234
 
 # DockerHub Credentials
-
 DOCKERHUB_USERNAME=vhgalvez
 DOCKERHUB_TOKEN=your_dockerhub_token_here
 
 # GitHub CI Token
-
 GITHUB_USERNAME=vhgalvez
 GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
