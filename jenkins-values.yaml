@@ -105,10 +105,9 @@ controller:
                       username: "${DOCKERHUB_USERNAME}"
                       password: "${DOCKERHUB_TOKEN}"
                       description: "DockerHub Access Token for CI/CD"
-                  - usernamePassword:
+                  - secretText:
                       id: "github-ci-token"
-                      username: "${GITHUB_USERNAME}"
-                      password: "${GITHUB_TOKEN}"
+                      secret: "${GITHUB_TOKEN}"
                       description: "GitHub Token para Push desde Jenkins"
 
   sidecars:
