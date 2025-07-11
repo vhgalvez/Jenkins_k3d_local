@@ -228,7 +228,6 @@ Luego ejecuta el script para desplegar Jenkins en tu clúster K3d:
 ./deploy_jenkins.sh
 ```
 
-
 ## 📝 Cómo crear un token de acceso para Docker Hub
 
 Para poder hacer push de imágenes a Docker Hub desde Jenkins, necesitas un token de acceso. Aquí te explico cómo crearlo de forma sencilla y rápida:
@@ -251,14 +250,22 @@ Para poder hacer push de imágenes a Docker Hub desde Jenkins, necesitas un toke
 sudo nano .env
 ```
 
-# .env
-JENKINS_ADMIN_USER=admin
-JENKINS_ADMIN_PASSWORD=admin123
-DOCKERHUB_USERNAME=vhgalvez
-DOCKERHUB_TOKEN=xxxxxxxxxxxxxxxx
-GITHUB_USERNAME=vhgalvez
-GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxx
+# Jenkins Admin
 
+. env
+
+JENKINS_ADMIN_USER=admin
+JENKINS_ADMIN_PASSWORD=admin1234
+
+# DockerHub Credentials
+
+DOCKERHUB_USERNAME=vhgalvez
+DOCKERHUB_TOKEN=your_dockerhub_token_here
+
+# GitHub CI Token
+
+GITHUB_USERNAME=vhgalvez
+GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 ```bash
 kubectl create secret generic dockerhub-credentials \
@@ -270,8 +277,7 @@ kubectl create secret generic dockerhub-credentials \
 Sustituye TU_TOKEN_DE_DOCKER_HUB por el token generado desde:
 https://hub.docker.com/settings/security
 
-
-
+## 📝 Cómo crear un token de acceso para GitHub
 
 En Jenkins:
 
@@ -283,7 +289,7 @@ Agrega una nueva credencial de tipo:
 
 "Username with password":
 
-Username: tu nombre de usuario de GitHub (o un token ghp_*** como username).
+Username: tu nombre de usuario de GitHub (o un token ghp\_\*\*\* como username).
 
 Password: un GitHub personal access token (PAT) con permisos de repo y workflow.
 
@@ -291,17 +297,6 @@ O mejor aún, usa tipo "Secret Text" si solo necesitas el token.
 
 Asigna un ID como: github-ci-token
 
-
-
-
 ## 📜 Licencia
 
 MIT © [https://github.com/vhgalvez](https://github.com/vhgalvez)
-
-
-
-
-
-
-
-
