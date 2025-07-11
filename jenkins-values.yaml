@@ -2,7 +2,7 @@
 controller:
   image:
     repository: jenkins/jenkins
-    tag: "2.518-jdk21" # Última versión con JDK 21
+    tag: "2.518-jdk21"
     pullPolicy: IfNotPresent
 
   admin:
@@ -37,7 +37,13 @@ controller:
           name: github-ci-token
           key: token
 
-  installPlugins: [] # Los plugins se asumen preinstalados
+  installPlugins:
+    - kubernetes
+    - workflow-aggregator
+    - git
+    - docker-workflow
+    - blueocean
+    - configuration-as-code
 
   JCasC:
     enabled: true
@@ -47,15 +53,15 @@ controller:
         jenkins:
           securityRealm:
             local:
-              allowsSignup: false  # Deshabilita el registro de nuevos usuarios
-              enableCaptcha: false  # Deshabilita el CAPTCHA
+              allowsSignup: false
+              enableCaptcha: false
               users:
                 - id: "${JENKINS_ADMIN_USER}"
                   password: "${JENKINS_ADMIN_PASSWORD}"
 
           authorizationStrategy:
             loggedInUsersCanDoAnything:
-              allowAnonymousRead: false  # Deshabilita el acceso anónimo
+              allowAnonymousRead: false
 
           clouds:
             - kubernetes:
