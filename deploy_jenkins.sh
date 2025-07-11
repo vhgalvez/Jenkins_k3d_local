@@ -28,7 +28,7 @@ fi
 
 # 2. Crear namespace
 echo "🚀 Creando namespace '$NAMESPACE'..."
-kubectl create namespace "$NAMESPACE"
+kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 
 # 3. Crear Secret jenkins-admin
 echo "🔑 Creando Secret 'jenkins-admin'..."
@@ -46,8 +46,8 @@ kubectl create secret generic dockerhub-credentials \
   --from-literal=password="$DOCKERHUB_TOKEN" \
   -n "$NAMESPACE"
 
-# 5. Asegurar que el repo está disponible
-if ! helm repo list | grep -q jenkins; then
+# 5. Asegurar que el repo Jenkins esté añadido
+if ! helm repo list | grep -q "^jenkins"; then
   echo "➕ Añadiendo repositorio Jenkins..."
   helm repo add jenkins https://charts.jenkins.io
 fi
@@ -59,27 +59,27 @@ helm upgrade --install "$RELEASE" "$CHART" \
   -n "$NAMESPACE" \
   -f "$VALUES_FILE"
 
-# 7. Esperar rollout
+# 7. Esperar a que Jenkins esté listo
 echo "⏳ Esperando a que Jenkins esté listo..."
 sleep 10
 if ! kubectl rollout status statefulset/"$RELEASE" -n "$NAMESPACE" --timeout=5m; then
-  echo "⚠️  Error en despliegue. Logs del pod:"
+  echo "⚠️  Error en el despliegue. Logs del pod:"
   kubectl get pods -n "$NAMESPACE"
   kubectl logs -n "$NAMESPACE" pod/"$RELEASE"-0 -c jenkins || true
   exit 1
 fi
 
-# 8. Mostrar info y abrir port-forward
-echo "✅ Jenkins está UP. Pods:"
+# 8. Mostrar información y abrir port-forward
+echo "✅ Jenkins está listo. Pods:"
 kubectl get pods -n "$NAMESPACE"
 
 cat <<EOF
 
-🌐 Accede a Jenkins:
+🌐 Abre Jenkins en tu navegador:
     http://localhost:8080
 
-👤 Usuario: $JENKINS_ADMIN_USER  
-🔒 Contraseña: $JENKINS_ADMIN_PASSWORD  
+👤 Usuario: $JENKINS_ADMIN_USER
+🔒 Contraseña: $JENKINS_ADMIN_PASSWORD
 
 (🔁 Ctrl+C para cerrar el port-forward)
 
