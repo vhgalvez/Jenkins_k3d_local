@@ -228,6 +228,13 @@ Luego ejecuta el script para desplegar Jenkins en tu clúster K3d:
 ./deploy_jenkins.sh
 ```
 
+
+Si solo quieres desplegar los secretos necesarios para Jenkins, puedes ejecutar:
+
+```bash
+./deploy_jenkins.sh --only-secrets
+```
+
 ## 📝 Cómo crear un token de acceso para Docker Hub
 
 Para poder hacer push de imágenes a Docker Hub desde Jenkins, necesitas un token de acceso. Aquí te explico cómo crearlo de forma sencilla y rápida:
@@ -292,6 +299,11 @@ Password: un GitHub personal access token (PAT) con permisos de repo y workflow.
 O mejor aún, usa tipo "Secret Text" si solo necesitas el token.
 
 Asigna un ID como: github-ci-token
+
+
+
+
+
 
 ## 📜 Licencia
 
