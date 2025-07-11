@@ -44,10 +44,10 @@ controller:
     - docker-workflow
     - docker-commons
     - blueocean
-    - credentials
+    - credentials # Explicitly list 'credentials' plugin
     - credentials-binding
     - configuration-as-code
-    - plain-credentials
+    - plain-credentials # Explicitly list 'plain-credentials' plugin
 
   JCasC:
     enabled: true
