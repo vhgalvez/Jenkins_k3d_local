@@ -5,11 +5,17 @@ controller:
     tag: "2.504.3-jdk17"
     pullPolicy: IfNotPresent
 
+  # ----------------------------------------
+  # Credenciales de administrador (via Secret)
+  # ----------------------------------------
   admin:
     existingSecret: jenkins-admin
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
+  # ----------------------------------------
+  # Variables de entorno que toma de Secrets
+  # ----------------------------------------
   containerEnv:
     - name: JENKINS_ADMIN_USER
       valueFrom:
@@ -21,17 +27,34 @@ controller:
         secretKeyRef:
           name: jenkins-admin
           key: jenkins-admin-password
+    - name: DOCKERHUB_USERNAME
+      valueFrom:
+        secretKeyRef:
+          name: dockerhub-credentials
+          key: username
+    - name: DOCKERHUB_TOKEN
+      valueFrom:
+        secretKeyRef:
+          name: dockerhub-credentials
+          key: password
 
+  # ----------------------------------------
+  # Plugins necesarios
+  # ----------------------------------------
   installPlugins:
     - kubernetes
     - workflow-aggregator
     - git
-    - docker-workflow
+    - docker-workflow # pasos docker build/push
+    - docker-commons # librería de credenciales Docker
     - blueocean
     - credentials
     - credentials-binding
     - configuration-as-code
 
+  # ----------------------------------------
+  # Jenkins Configuration as Code (JCasC)
+  # ----------------------------------------
   JCasC:
     enabled: true
     defaultConfig: false
@@ -44,17 +67,31 @@ controller:
               users:
                 - id: "${JENKINS_ADMIN_USER}"
                   password: "${JENKINS_ADMIN_PASSWORD}"
+
           authorizationStrategy:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
+
+          # ---- Credenciales Docker Hub ----
+          credentials:
+            system:
+              domainCredentials:
+                - credentials:
+                    - usernamePassword:
+                        id: "dockerhub-credentials"
+                        username: "${DOCKERHUB_USERNAME}"
+                        password: "${DOCKERHUB_TOKEN}"
+                        description: "DockerHub Access Token for CI/CD"
+
+          # ---- Cloud Kubernetes para los agentes ----
           clouds:
             - kubernetes:
                 name: "kubernetes"
                 serverUrl: "https://kubernetes.default"
                 skipTlsVerify: true
                 namespace: "jenkins"
-                jenkinsUrl: "http://jenkins-local-k3d:8080" # ✅ CORREGIDO
-                jenkinsTunnel: "jenkins-local-k3d-agent:50000" # ✅ CORREGIDO
+                jenkinsUrl: "http://jenkins-local-k3d:8080"
+                jenkinsTunnel: "jenkins-local-k3d-agent:50000"
                 containerCap: 10
                 connectTimeout: 5
                 readTimeout: 15
@@ -73,6 +110,9 @@ controller:
                         resourceLimitCpu: "500m"
                         resourceLimitMemory: "512Mi"
 
+  # ----------------------------------------
+  # Otros ajustes del chart
+  # ----------------------------------------
   sidecars:
     configAutoReload:
       enabled: true
@@ -94,6 +134,9 @@ controller:
     - name: docker-bin
       mountPath: /usr/local/bin
 
+# --------------------------------------------------------------------
+# Configuración del agente por defecto que lanza el Cloud de Kubernetes
+# --------------------------------------------------------------------
 agent:
   podName: "jenkins-agent"
   customJenkinsLabels:
@@ -106,11 +149,17 @@ agent:
   connectTimeout: 100
   runAsUser: 1000
 
+# -------------------
+# Almacenamiento local
+# -------------------
 persistence:
   enabled: true
   storageClass: local-path
   size: 8Gi
 
+# -------------
+# Servicio K3d
+# -------------
 service:
-  type: ClusterIP   # ✅ Usa ClusterIP para entornos internos de K3d
-  agentListenerPort: 50000  # ✅ Necesario para el túnel JNLP
+  type: ClusterIP
+  agentListenerPort: 50000
