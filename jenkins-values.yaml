@@ -33,6 +33,8 @@ controller:
     - ssh-credentials
     - credentials
     - plain-credentials
+    - "credentials:2" # Asegurarse de que el complemento de credenciales esté especificado correctamente
+    - "configuration-as-code:1.51" # Verificar la versión correcta del plugin
 
   resources:
     requests:
