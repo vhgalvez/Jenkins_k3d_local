@@ -21,7 +21,7 @@ fi
 # Generar el hash BCrypt para la contraseña directamente en memoria si no está presente
 if [[ -z "${JENKINS_ADMIN_PASSWORD_HASH:-}" ]]; then
     echo "🔑 Generando el hash para la contraseña..."
-    JENKINS_ADMIN_PASSWORD_HASH=$(python3 -c "import bcrypt; print(bcrypt.hashpw('$JENKINS_ADMIN_PASSWORD'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'))")
+    JENKINS_ADMIN_PASSWORD_HASH=$(python3 -c "import bcrypt; print('#jbcrypt:' + bcrypt.hashpw('$JENKINS_ADMIN_PASSWORD'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'))")
     echo "✅ Hash de la contraseña generado."
 fi
 
@@ -38,9 +38,9 @@ CHART="jenkins/jenkins"
 # --- Función para eliminar secretos de Jenkins ---
 delete_secrets() {
     echo "🗑️ Eliminando secretos de Jenkins existentes..."
-    kubectl delete secret jenkins-admin -n "$NAMESPACE" || true
-    kubectl delete secret dockerhub-credentials -n "$NAMESPACE" || true
-    kubectl delete secret github-ci-token -n "$NAMESPACE" || true
+    kubectl delete secret jenkins-admin -n "$NAMESPACE" || echo "🔴 No se encontró el secreto 'jenkins-admin'"
+    kubectl delete secret dockerhub-credentials -n "$NAMESPACE" || echo "🔴 No se encontró el secreto 'dockerhub-credentials'"
+    kubectl delete secret github-ci-token -n "$NAMESPACE" || echo "🔴 No se encontró el secreto 'github-ci-token'"
 }
 
 # --- Función para crear secrets en Kubernetes ---
