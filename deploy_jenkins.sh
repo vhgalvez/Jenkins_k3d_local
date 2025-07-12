@@ -36,14 +36,9 @@ create_secrets() {
     -n "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 }
 
-# Modo solo secrets
-if [[ "${1:-}" == "--only-secrets" ]]; then
-    echo "🔧 Modo: solo actualizar secretos"
-    kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
-    create_secrets
-    echo "✅ Secrets actualizados correctamente."
-    exit 0
-fi
+# --- Aplicar ConfigMap para Plugins ---
+echo "🔧 Aplicando ConfigMap para los plugins de Jenkins..."
+kubectl apply -f jenkins-plugins-configmap.yaml -n jenkins
 
 # 1. Eliminar Jenkins si ya está desplegado
 echo "🔍 Verificando si Jenkins ya está desplegado..."
