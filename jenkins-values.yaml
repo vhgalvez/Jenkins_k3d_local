@@ -37,7 +37,7 @@ controller:
           name: github-ci-token
           key: token
 
-  # Remove plugin versions to resolve dependencies automatically
+  #  Plugin resolve dependencies automatically
   installPlugins:
     - kubernetes
     - workflow-aggregator
