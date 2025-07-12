@@ -47,8 +47,8 @@ controller:
     - configuration-as-code
     - credentials-binding
     - ssh-credentials
-    - plain-credentials # Ensure plain-credentials is installed
-    - credentials # Ensure credentials plugin is installed
+    - credentials # Ensure credentials plugin is installed (moved to the top)
+    - plain-credentials # Ensure plain-credentials is installed (moved to the top)
 
   resources:
     requests:
