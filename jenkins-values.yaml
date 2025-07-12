@@ -15,12 +15,12 @@ controller:
       valueFrom:
         secretKeyRef:
           name: jenkins-admin
-          key: jenkins-admin-user
+          key: jenkins-admin-user # Refleja el nombre de usuario del secreto
     - name: JENKINS_ADMIN_PASSWORD
       valueFrom:
         secretKeyRef:
           name: jenkins-admin
-          key: jenkins-admin-password
+          key: jenkins-admin-password # Refleja la contraseña sin hash
     - name: JENKINS_ADMIN_PASSWORD_HASH
       valueFrom:
         secretKeyRef:
@@ -30,17 +30,17 @@ controller:
       valueFrom:
         secretKeyRef:
           name: dockerhub-credentials
-          key: username
+          key: username # Referencia el secreto para DockerHub
     - name: DOCKERHUB_TOKEN
       valueFrom:
         secretKeyRef:
           name: dockerhub-credentials
-          key: password
+          key: password # Referencia el token de DockerHub
     - name: GITHUB_TOKEN
       valueFrom:
         secretKeyRef:
           name: github-ci-token
-          key: token
+          key: token # Referencia el token de GitHub para CI/CD
 
   installPlugins:
     - kubernetes
@@ -71,25 +71,25 @@ controller:
           systemMessage: "Bienvenido a Jenkins"
           securityRealm:
             local:
-              allowsSignup: false
-              enableCaptcha: false
+              allowsSignup: false  # Desactiva el registro de nuevos usuarios
+              enableCaptcha: false  # Desactiva el captcha para login
               users:
-                - id: "${JENKINS_ADMIN_USER}"
-                  password: "#jbcrypt:${JENKINS_ADMIN_PASSWORD_HASH}"
+                - id: "${JENKINS_ADMIN_USER}"  # Variable del usuario administrador
+                  password: "#jbcrypt:${JENKINS_ADMIN_PASSWORD_HASH}"  # Se asegura que el hash tenga el prefijo correcto
 
           authorizationStrategy:
             loggedInUsersCanDoAnything:
-              allowAnonymousRead: false
+              allowAnonymousRead: false  # No permite el acceso anónimo
 
           clouds:
             - kubernetes:
                 name: "kubernetes"
                 serverUrl: "https://kubernetes.default"
-                skipTlsVerify: true
+                skipTlsVerify: true  # Permite saltarse la verificación TLS
                 namespace: "jenkins"
-                jenkinsUrl: "http://{{ .Release.Name }}-jenkins:8080"
+                jenkinsUrl: "http://{{ .Release.Name }}-jenkins:8080"  # URL de Jenkins
                 jenkinsTunnel: "{{ .Release.Name }}-jenkins-agent:50000"
-                containerCap: 10
+                containerCap: 10  # Límite de contenedores
                 connectTimeout: 5
                 readTimeout: 15
                 templates:
@@ -109,7 +109,7 @@ controller:
 
         unclassified:
           casc:
-            initializationTimeout: 300
+            initializationTimeout: 300  # Timeout para la inicialización de JCasC
 
         credentials:
           system:
@@ -117,8 +117,8 @@ controller:
               - credentials:
                   - usernamePassword:
                       id: "dockerhub-credentials"
-                      username: "${DOCKERHUB_USERNAME}"
-                      password: "${DOCKERHUB_TOKEN}"
+                      username: "${DOCKERHUB_USERNAME}"  # Variable de usuario DockerHub
+                      password: "${DOCKERHUB_TOKEN}"  # Variable de token DockerHub
                       description: "DockerHub Access Token for CI/CD"
                 # - secretText: # <--- Comentado temporalmente
                 #    id: "github-ci-token"
