@@ -26,16 +26,19 @@ CHART="jenkins/jenkins"
 create_secrets() {
     echo "🔑 (Re)Creando secretos necesarios en el namespace '$NAMESPACE'..."
     
+    # Crear el secreto jenkins-admin con el usuario y la contraseña hash
     kubectl create secret generic jenkins-admin \
     --from-literal=jenkins-admin-user="$JENKINS_ADMIN_USER" \
-    --from-literal=jenkins-admin-password="$JENKINS_ADMIN_PASSWORD_HASH" \  # Utilizando el hash de la contraseña
+    --from-literal=jenkins-admin-password="$JENKINS_ADMIN_PASSWORD_HASH" \
     -n "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
     
+    # Crear el secreto dockerhub-credentials
     kubectl create secret generic dockerhub-credentials \
     --from-literal=username="$DOCKERHUB_USERNAME" \
     --from-literal=password="$DOCKERHUB_TOKEN" \
     -n "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
     
+    # Crear el secreto github-ci-token
     kubectl create secret generic github-ci-token \
     --from-literal=token="$GITHUB_TOKEN" \
     -n "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
