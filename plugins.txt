@@ -1,1 +1,4 @@
 # plugins.txt
+blueocean:latest
+docker:latest
+pipeline-aws:latest
