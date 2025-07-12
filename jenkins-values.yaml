@@ -51,11 +51,11 @@ controller:
 
   resources:
     requests:
-      cpu: "4000m"
-      memory: "8Gi"
+      cpu: "1000m"
+      memory: "2Gi"
     limits:
-      cpu: "8000m"
-      memory: "10Gi"
+      cpu: "2000m"
+      memory: "4Gi"
 
   JCasC:
     enabled: true
