@@ -228,6 +228,11 @@ Luego ejecuta el script para desplegar Jenkins en tu clúster K3d:
 ./deploy_jenkins.sh
 ```
 
+```bash
+sudo chmod u+w .env
+```
+
+
 
 Si solo quieres desplegar los secretos necesarios para Jenkins, puedes ejecutar:
 
