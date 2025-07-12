@@ -28,10 +28,10 @@ controller:
     - git:5.7.0
     - docker-workflow
     - blueocean
-    - configuration-as-code:1903.v004d55388f30 # Actualizado
+    - configuration-as-code:1963.v24e046127a_3f # Actualizado a la versión correcta
     - credentials-binding
     - ssh-credentials
-    - credentials:1408.va_622a_b_f5b_1b_1 # Actualizado
+    - credentials:1415.v831096eb_5534 # Actualizado a la versión correcta
     - plain-credentials
 
   resources:
