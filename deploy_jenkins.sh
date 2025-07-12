@@ -13,7 +13,7 @@ source .env
 set +a
 
 # Verificar que las variables están correctamente cargadas
-if [[ -z "${JENKINS_ADMIN_USER:-}" || -z "${JENKINS_ADMIN_PASSWORD:-}" || -z "${DOCKERHUB_USERNAME:-}" || -z "${DOCKERHUB_TOKEN:-}" || -z "${GITHUB_TOKEN:-}" ]]; then
+if [[ -z "${JENKINS_ADMIN_USER:-}" || -z "${JENKINS_ADMIN_PASSWORD_HASH:-}" || -z "${DOCKERHUB_USERNAME:-}" || -z "${DOCKERHUB_TOKEN:-}" || -z "${GITHUB_TOKEN:-}" ]]; then
     echo "❌ Las variables de entorno necesarias no están definidas en el archivo .env."
     exit 1
 fi
@@ -28,7 +28,7 @@ create_secrets() {
     
     kubectl create secret generic jenkins-admin \
     --from-literal=jenkins-admin-user="$JENKINS_ADMIN_USER" \
-    --from-literal=jenkins-admin-password="$JENKINS_ADMIN_PASSWORD" \
+    --from-literal=jenkins-admin-password="$JENKINS_ADMIN_PASSWORD_HASH" \  # Utilizando el hash de la contraseña
     -n "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
     
     kubectl create secret generic dockerhub-credentials \
@@ -112,7 +112,7 @@ cat <<EOF
     http://localhost:8080
 
 👤 Usuario:     $JENKINS_ADMIN_USER
-🔒 Contraseña:  $JENKINS_ADMIN_PASSWORD
+🔒 Contraseña:  $JENKINS_ADMIN_PASSWORD_HASH  # Usamos el hash de la contraseña
 
 (🔁 Ctrl+C para cerrar el port-forward)
 
