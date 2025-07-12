@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jenkins-plugins
+  namespace: jenkins # Asegúrate de que el namespace sea el correcto
+data:
+  plugins.txt: |-
+    # Core plugins (estos suelen venir con la imagen, pero puedes ser explícito)
+    # workflow-job:latest
+    # workflow-aggregator:latest
+
+    # Plugins que queremos instalar o asegurar su versión
+    kubernetes:1.31.0       # Reemplaza con una versión estable y compatible
+    workflow-cps:2803.v554558509a_d1 # Una versión específica de workflow-cps
+    git:4.11.5              # Reemplaza con una versión estable y compatible
+    blueocean:1.27.0        # Un plugin común para UI
+    credentials:1311.v2306d7367663 # Plugin de credenciales
+    cloudbees-folder:6.858.v635564cdb_a_a_c # Plugin de carpetas
+    # Añade aquí cualquier otro plugin que necesites, especificando la versión
