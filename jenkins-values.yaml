@@ -38,9 +38,9 @@ controller:
           key: token
 
   installPlugins:
-    - kubernetes:1.30.1
+    - kubernetes:1.31.3
     - workflow-aggregator:2.6
-    - git:5.2.0 # Updated Git plugin version
+    - git:5.7.0
     - docker-workflow:621.va_73f881d9232
     - blueocean:1.24.7
     - configuration-as-code:1.53
@@ -52,11 +52,11 @@ controller:
 
   resources:
     requests:
-      cpu: "1500m" # Adjusted CPU requests
-      memory: "4Gi" # Adjusted memory requests
+      cpu: "1500m"
+      memory: "4Gi"
     limits:
-      cpu: "3000m" # Adjusted CPU limits
-      memory: "6Gi" # Adjusted memory limits
+      cpu: "3000m"
+      memory: "6Gi"
 
   JCasC:
     enabled: true
@@ -95,7 +95,7 @@ controller:
                     idleMinutes: 1
                     containers:
                       - name: jnlp
-                        image: "jenkins/inbound-agent:alpine"
+                        image: "jenkins/inbound-agent"
                         args: "${computer.jnlpmac} ${computer.name}"
                         ttyEnabled: true
                         resourceRequestCpu: "100m"
@@ -143,7 +143,7 @@ agent:
   nodeUsageMode: NORMAL
   containers:
     - name: jnlp
-      image: "jenkins/inbound-agent:alpine"
+      image: "jenkins/inbound-agent"
       ttyEnabled: true
   connectTimeout: 100
   runAsUser: 1000
