@@ -33,6 +33,14 @@ controller:
     - ssh-credentials
     - credentials
     - plain-credentials
+    - active-directory
+    - github-oauth
+    - openid-connect-auth
+    - role-strategy
+    - reverse-proxy-auth
+    - jwt-auth
+    - authentication-tokens
+    - url-auth-sso
 
   resources:
     requests:
