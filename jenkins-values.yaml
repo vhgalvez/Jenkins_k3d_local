@@ -37,18 +37,21 @@ controller:
           name: github-ci-token
           key: token
 
+  # Eliminar las versiones de los plugins problemáticos
   installPlugins:
     - kubernetes:1.31.3
     - workflow-aggregator:2.6
-    - git:5.7.0
+    - git # Versión eliminada
     - docker-workflow:621.va_73f881d9232
     - blueocean:1.24.7
-    - configuration-as-code:1.58
-    - credentials-binding:1.27
+    - configuration-as-code # Versión eliminada
+    - credentials-binding # Versión eliminada
+    - ssh-credentials
 
+  # Mover credentials y plain-credentials aquí y asegurarse de que no tengan versiones
   additionalPlugins:
-    - "credentials:1311.v2306d7367663"
-    - "plain-credentials:1.10"
+    - "credentials" # Versión eliminada
+    - "plain-credentials" # Versión eliminada
 
   resources:
     requests:
