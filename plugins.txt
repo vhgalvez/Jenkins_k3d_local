@@ -1,11 +1,7 @@
 # plugins.txt
-
-# Plugins de Credenciales (esenciales para CasC con credenciales)
-credentials:1311.v2306d7367663      # La versión compatible con Jenkins 2.518
-plain-credentials:1.10             # Necesario para el tipo secretText
-
-# Plugin de Configuration as Code
-configuration-as-code:1.56         # Asegúrate de usar una versión compatible con Jenkins 2.518 y los plugins anteriores
-
-# Si usas Kubernetes Secrets para inyectar credenciales via CasC
-kubernetes-credentials-provider:1.20 # Para la sección unclassified.secrets.kubernetesSecrets
+# Core plugins for CasC and Kubernetes credential integration
+credentials:1311.v2306d7367663  # Core credentials plugin
+plain-credentials:1.10         # Plain credentials plugin for secretText
+configuration-as-code:1.56     # CasC plugin
+kubernetes-credentials-provider:1.20  # Plugin for Kubernetes credentials handling
+kubernetes:1.31.0             # Kubernetes plugin (ensure it's compatible)
