@@ -48,6 +48,7 @@ controller:
     - ssh-credentials
     - credentials
     - plain-credentials
+    - sse-gateway
 
   resources:
     requests:
