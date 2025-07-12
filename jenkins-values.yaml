@@ -37,21 +37,20 @@ controller:
           name: github-ci-token
           key: token
 
-  # Eliminar las versiones de los plugins problemáticos
+  # Remove plugin versions to resolve dependencies automatically
   installPlugins:
-    - kubernetes:1.31.3
-    - workflow-aggregator:2.6
-    - git # Versión eliminada
-    - docker-workflow:621.va_73f881d9232
-    - blueocean:1.24.7
-    - configuration-as-code # Versión eliminada
-    - credentials-binding # Versión eliminada
+    - kubernetes
+    - workflow-aggregator
+    - git
+    - docker-workflow
+    - blueocean
+    - configuration-as-code
+    - credentials-binding
     - ssh-credentials
 
-  # Mover credentials y plain-credentials aquí y asegurarse de que no tengan versiones
   additionalPlugins:
-    - "credentials" # Versión eliminada
-    - "plain-credentials" # Versión eliminada
+    - "credentials"
+    - "plain-credentials"
 
   resources:
     requests:
@@ -105,20 +104,6 @@ controller:
                         resourceRequestMemory: "128Mi"
                         resourceLimitCpu: "500m"
                         resourceLimitMemory: "512Mi"
-
-          credentials:
-            system:
-              domainCredentials:
-                - credentials:
-                    - usernamePassword:
-                        id: "dockerhub-credentials"
-                        username: "${DOCKERHUB_USERNAME}"
-                        password: "${DOCKERHUB_TOKEN}"
-                        description: "DockerHub Access Token for CI/CD"
-                    - secretText:
-                        id: "github-ci-token"
-                        secret: "${GITHUB_TOKEN}"
-                        description: "GitHub Token for Push from Jenkins"
 
   sidecars:
     configAutoReload:
