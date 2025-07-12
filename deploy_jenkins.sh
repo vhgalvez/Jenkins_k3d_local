@@ -152,4 +152,5 @@ cat <<EOF
 
 EOF
 
+
 kubectl port-forward -n "$NAMESPACE" svc/"$RELEASE" 8080:8080
