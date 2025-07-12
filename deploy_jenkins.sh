@@ -13,9 +13,16 @@ source .env
 set +a
 
 # Verificar que las variables están correctamente cargadas
-if [[ -z "${JENKINS_ADMIN_USER:-}" || -z "${JENKINS_ADMIN_PASSWORD_HASH:-}" || -z "${DOCKERHUB_USERNAME:-}" || -z "${DOCKERHUB_TOKEN:-}" || -z "${GITHUB_TOKEN:-}" ]]; then
+if [[ -z "${JENKINS_ADMIN_USER:-}" || -z "${JENKINS_ADMIN_PASSWORD:-}" || -z "${DOCKERHUB_USERNAME:-}" || -z "${DOCKERHUB_TOKEN:-}" || -z "${GITHUB_TOKEN:-}" ]]; then
     echo "❌ Las variables de entorno necesarias no están definidas en el archivo .env."
     exit 1
+fi
+
+# Generar el hash BCrypt si no está presente
+if [[ -z "${JENKINS_ADMIN_PASSWORD_HASH:-}" ]]; then
+    echo "🔑 Generando el hash para la contraseña..."
+    export JENKINS_ADMIN_PASSWORD_HASH=$(htpasswd -bnBC 10 "" "$JENKINS_ADMIN_PASSWORD" | tr -d ':\n')
+    echo "✅ Hash de la contraseña generado."
 fi
 
 NAMESPACE="jenkins"
@@ -37,7 +44,7 @@ create_secrets() {
     --from-literal=username="$DOCKERHUB_USERNAME" \
     --from-literal=password="$DOCKERHUB_TOKEN" \
     -n "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
-    
+
     # Crear el secreto github-ci-token
     kubectl create secret generic github-ci-token \
     --from-literal=token="$GITHUB_TOKEN" \
