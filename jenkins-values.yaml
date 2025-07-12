@@ -70,7 +70,7 @@ controller:
               enableCaptcha: false
               users:
                 - id: "${JENKINS_ADMIN_USER}"
-                  password: "${JENKINS_ADMIN_PASSWORD}"
+                  password: "#jbcrypt:${JENKINS_ADMIN_PASSWORD_HASH}"
 
           authorizationStrategy:
             loggedInUsersCanDoAnything:
