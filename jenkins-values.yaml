@@ -37,7 +37,6 @@ controller:
           name: github-ci-token
           key: token
 
-  # Plugin resolve dependencies automatically
   installPlugins:
     - kubernetes
     - workflow-aggregator
@@ -49,6 +48,7 @@ controller:
     - ssh-credentials
     - credentials
     - plain-credentials
+    - credentials-provider # Essential for managing `secretText`
 
   resources:
     requests:
@@ -103,11 +103,9 @@ controller:
                         resourceLimitCpu: "500m"
                         resourceLimitMemory: "512Mi"
 
-        # --- NEW ADDITION HERE ---
         unclassified:
           casc:
-            initializationTimeout: 300 # Give JCasC up to 300 seconds (5 minutes) to apply config
-        # --- END NEW ADDITION ---
+            initializationTimeout: 300  # Ensure JCasC applies within 5 minutes
 
         credentials:
           system:
