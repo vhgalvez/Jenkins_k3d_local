@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env bash 
 set -euo pipefail
 
 # 0. Verificar existencia del archivo .env
@@ -24,7 +24,7 @@ if [[ -z "${JENKINS_ADMIN_PASSWORD_HASH:-}" ]]; then
     
     # Generar el hash bcrypt y asegurarse de que tenga el prefijo "#jbcrypt:"
     # Usar la variable correctamente pasando la contraseña desde el entorno de bash a python
-    JENKINS_ADMIN_PASSWORD_HASH=$(python3 -c "import bcrypt; import os; password = os.getenv('JENKINS_ADMIN_PASSWORD'); print('#jbcrypt:' + bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'))")
+    JENKINS_ADMIN_PASSWORD_HASH=$(python3 -c "import bcrypt; password = '${JENKINS_ADMIN_PASSWORD}'; print('#jbcrypt:' + bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'))")
     
     # Validar que el hash generado tenga el formato correcto
     if [[ -z "$JENKINS_ADMIN_PASSWORD_HASH" || ! "$JENKINS_ADMIN_PASSWORD_HASH" =~ ^#jbcrypt: ]]; then
