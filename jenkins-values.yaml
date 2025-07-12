@@ -47,8 +47,8 @@ controller:
     - configuration-as-code
     - credentials-binding
     - ssh-credentials
-    - credentials:2.3.18 # specify version
-    - plain-credentials:1.8 # specify version
+    - credentials
+    - plain-credentials
 
   resources:
     requests:
