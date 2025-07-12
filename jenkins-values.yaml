@@ -50,13 +50,14 @@ controller:
     - configuration-as-code:1.53
     - credentials-binding:1.27
 
+  # Recursos para el controlador (que afecta también a los contenedores init)
   resources:
     requests:
-      cpu: "500m" # Solicitar medio núcleo
-      memory: "1Gi" # Solicitar 1 GB de memoria
+      cpu: "1000m" # Aumentado a 1 CPU para una mayor capacidad de procesamiento
+      memory: "3Gi" # Aumentado a 3 GB para evitar que el contenedor se quede sin memoria
     limits:
-      cpu: "1000m" # Limitar a 1 núcleo
-      memory: "2Gi" # Limitar a 2 GB de memoria
+      cpu: "2000m" # Limitar a 2 CPUs para un mejor rendimiento
+      memory: "4Gi" # Limitar a 4 GB de memoria para asegurar que el contenedor tiene suficiente memoria
 
   JCasC:
     enabled: true
@@ -64,6 +65,7 @@ controller:
     configScripts:
       main: |
         jenkins:
+          systemMessage: "Bienvenido a Jenkins"
           securityRealm:
             local:
               allowsSignup: false
