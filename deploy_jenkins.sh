@@ -18,17 +18,17 @@ if [[ -z "${JENKINS_ADMIN_USER:-}" || -z "${JENKINS_ADMIN_PASSWORD:-}" || -z "${
     exit 1
 fi
 
-# Generar el hash BCrypt para la contraseña directamente en memoria si no está presente
+# Verificar si el hash de la contraseña está presente
 if [[ -z "${JENKINS_ADMIN_PASSWORD_HASH:-}" ]]; then
     echo "🔑 Generando el hash para la contraseña..."
-    # Generar el hash bcrypt y asegurarse que tenga el prefijo "#jbcrypt:"
+    # Generar el hash bcrypt y asegurarse de que tenga el prefijo "#jbcrypt:"
     JENKINS_ADMIN_PASSWORD_HASH=$(python3 -c "import bcrypt; print('#jbcrypt:' + bcrypt.hashpw('$JENKINS_ADMIN_PASSWORD'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'))")
-    
+
     if [[ -z "$JENKINS_ADMIN_PASSWORD_HASH" || ! "$JENKINS_ADMIN_PASSWORD_HASH" =~ ^#jbcrypt: ]]; then
         echo "❌ Error: El hash de la contraseña no se generó correctamente o no tiene el formato esperado."
         exit 1
     fi
-    
+
     echo "✅ Hash de la contraseña generado."
 fi
 
@@ -151,7 +151,6 @@ cat <<EOF
 (🔁 Ctrl+C para cerrar el port-forward)
 
 EOF
-
 
 
 kubectl port-forward -n "$NAMESPACE" svc/"$RELEASE" 8080:8080
