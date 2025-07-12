@@ -18,22 +18,28 @@ if [[ -z "${JENKINS_ADMIN_USER:-}" || -z "${JENKINS_ADMIN_PASSWORD:-}" || -z "${
     exit 1
 fi
 
-# Generar el hash BCrypt si no está presente
+# Generar el hash BCrypt para la contraseña directamente en memoria si no está presente
 if [[ -z "${JENKINS_ADMIN_PASSWORD_HASH:-}" ]]; then
     echo "🔑 Generando el hash para la contraseña..."
-    export JENKINS_ADMIN_PASSWORD_HASH=$(htpasswd -bnBC 10 "" "$JENKINS_ADMIN_PASSWORD" | tr -d ':\n')
+    JENKINS_ADMIN_PASSWORD_HASH=$(htpasswd -bnBC 10 "" "$JENKINS_ADMIN_PASSWORD" | tr -d ':\n')
     echo "✅ Hash de la contraseña generado."
+fi
+
+# Asegurarse de que la variable de hash esté correctamente seteada
+if [[ -z "$JENKINS_ADMIN_PASSWORD_HASH" ]]; then
+    echo "❌ No se pudo generar el hash de la contraseña. Asegúrate de que htpasswd esté instalado correctamente."
+    exit 1
 fi
 
 NAMESPACE="jenkins"
 RELEASE="jenkins-local-k3d"
 CHART="jenkins/jenkins"
 
-# --- Función para crear secrets ---
+# --- Función para crear secrets en Kubernetes ---
 create_secrets() {
     echo "🔑 (Re)Creando secretos necesarios en el namespace '$NAMESPACE'..."
     
-    # Crear el secreto jenkins-admin con el usuario y la contraseña hash
+    # Crear el secreto jenkins-admin con el usuario y la contraseña hash en Kubernetes
     kubectl create secret generic jenkins-admin \
     --from-literal=jenkins-admin-user="$JENKINS_ADMIN_USER" \
     --from-literal=jenkins-admin-password="$JENKINS_ADMIN_PASSWORD_HASH" \
@@ -44,7 +50,7 @@ create_secrets() {
     --from-literal=username="$DOCKERHUB_USERNAME" \
     --from-literal=password="$DOCKERHUB_TOKEN" \
     -n "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
-
+    
     # Crear el secreto github-ci-token
     kubectl create secret generic github-ci-token \
     --from-literal=token="$GITHUB_TOKEN" \
