@@ -1,11 +1,16 @@
-# Jenkins Plugins Configuration
+# jenkins-plugins-configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: jenkins-plugins
-  namespace: jenkins
+  namespace: jenkins  # Asegúrate de que el namespace sea el correcto
 data:
   plugins.txt: |-
+    # Plugins core de Jenkins (estos suelen venir con la imagen, pero puedes ser explícito)
+    # workflow-job:latest
+    # workflow-aggregator:latest
+
+    # Plugins que queremos instalar o asegurar su versión
     kubernetes:1.31.0
     workflow-cps:2803.v554558509a_d1
     git:4.11.5
