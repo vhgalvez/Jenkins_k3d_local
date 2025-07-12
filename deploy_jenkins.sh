@@ -1,4 +1,4 @@
-#!/usr/bin/env bash 
+#!/usr/bin/env bash
 set -euo pipefail
 
 # 0. Verificar existencia del archivo .env
@@ -23,16 +23,15 @@ if [[ -z "${JENKINS_ADMIN_PASSWORD_HASH:-}" ]]; then
     echo "🔑 Generando el hash para la contraseña..."
     
     # Generar el hash bcrypt y asegurarse de que tenga el prefijo "#jbcrypt:"
-    # Usar la variable correctamente pasando la contraseña desde el entorno de bash a python
-    JENKINS_ADMIN_PASSWORD_HASH=$(python3 -c "import bcrypt; password = '${JENKINS_ADMIN_PASSWORD}'; print('#jbcrypt:' + bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'))")
-    
-    # Validar que el hash generado tenga el formato correcto
-    if [[ -z "$JENKINS_ADMIN_PASSWORD_HASH" || ! "$JENKINS_ADMIN_PASSWORD_HASH" =~ ^#jbcrypt: ]]; then
+    JENKINS_ADMIN_PASSWORD_HASH=$(python3 -c "import bcrypt; password = '${JENKINS_ADMIN_PASSWORD}'; hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'); print('#jbcrypt:' + hash)")
+
+    # Asegurarse de que el hash tenga el formato correcto
+    if [[ -z "$JENKINS_ADMIN_PASSWORD_HASH" || ! "$JENKINS_ADMIN_PASSWORD_HASH" =~ ^#jbcrypt:\$2b\$.+ ]]; then
         echo "❌ Error: El hash de la contraseña no se generó correctamente o no tiene el formato esperado."
         exit 1
     fi
-    
-    echo "✅ Hash de la contraseña generado."
+
+    echo "✅ Hash de la contraseña generado correctamente."
 fi
 
 # Asegurarse de que la variable de hash esté correctamente seteada
@@ -56,19 +55,19 @@ delete_secrets() {
 # --- Función para crear secrets en Kubernetes ---
 create_secrets() {
     echo "🔑 (Re)Creando secretos necesarios en el namespace '$NAMESPACE'..."
-    
+
     # Crear el secreto jenkins-admin con el usuario y la contraseña hash en Kubernetes
     kubectl create secret generic jenkins-admin \
     --from-literal=jenkins-admin-user="$JENKINS_ADMIN_USER" \
     --from-literal=jenkins-admin-password="$JENKINS_ADMIN_PASSWORD_HASH" \
     -n "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
-    
+
     # Crear el secreto dockerhub-credentials
     kubectl create secret generic dockerhub-credentials \
     --from-literal=username="$DOCKERHUB_USERNAME" \
     --from-literal=password="$DOCKERHUB_TOKEN" \
     -n "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
-    
+
     # Crear el secreto github-ci-token
     kubectl create secret generic github-ci-token \
     --from-literal=token="$GITHUB_TOKEN" \
@@ -80,16 +79,16 @@ echo "🔍 Verificando si Jenkins ya está desplegado..."
 if helm status "$RELEASE" -n "$NAMESPACE" &>/dev/null; then
     echo "🗑️  Desinstalando Jenkins existente..."
     helm uninstall "$RELEASE" -n "$NAMESPACE" || true
-    
+
     echo "🧹 Eliminando PVCs asociados..."
     kubectl delete pvc -l app.kubernetes.io/instance="$RELEASE" -n "$NAMESPACE" --ignore-not-found
-    
+
     echo "🧼 Eliminando recursos asociados..."
     kubectl delete all -l app.kubernetes.io/instance="$RELEASE" -n "$NAMESPACE" --ignore-not-found
-    
+
     echo "⏳ Eliminando namespace '$NAMESPACE'..."
     kubectl delete namespace "$NAMESPACE" --ignore-not-found
-    
+
     echo "⏳ Esperando a que el namespace se elimine completamente..."
     while kubectl get namespace "$NAMESPACE" &>/dev/null; do
         sleep 2
