@@ -37,13 +37,13 @@ controller:
           name: github-ci-token
           key: token
 
-  # Moved plugins here to avoid conflict
+  # Plugins críticos para CasC deben ir aquí
   additionalPlugins:
     - "credentials:1311.v2306d7367663"
     - "plain-credentials:1.10"
 
+  # Plugins estándar
   installPlugins:
-    # Removed credentials and plain-credentials here as they are handled in additionalPlugins
     - kubernetes
     - workflow-aggregator
     - git
