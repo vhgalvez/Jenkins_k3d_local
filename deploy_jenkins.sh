@@ -15,7 +15,6 @@ set +a
 NAMESPACE="jenkins"
 RELEASE="jenkins-local-k3d"
 CHART="jenkins/jenkins"
-VALUES_FILE="$HOME/projects/Jenkins_k3d_local/jenkins-values.yaml"
 
 # --- Función para crear secrets ---
 create_secrets() {
@@ -35,10 +34,6 @@ create_secrets() {
     --from-literal=token="$GITHUB_TOKEN" \
     -n "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 }
-
-# --- Aplicar ConfigMap para Plugins ---
-echo "🔧 Aplicando ConfigMap para los plugins de Jenkins..."
-kubectl apply -f jenkins-plugins-configmap.yaml -n jenkins
 
 # 1. Eliminar Jenkins si ya está desplegado
 echo "🔍 Verificando si Jenkins ya está desplegado..."
@@ -76,7 +71,7 @@ helm repo update
 echo "📦 Instalando Jenkins con Helm..."
 helm upgrade --install "$RELEASE" "$CHART" \
 -n "$NAMESPACE" \
--f "$VALUES_FILE"
+-f jenkins-values.yaml
 
 # 6. Esperar que Jenkins esté listo
 echo "⏳ Esperando a que Jenkins esté listo..."

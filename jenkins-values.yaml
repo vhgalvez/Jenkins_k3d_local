@@ -37,12 +37,10 @@ controller:
           name: github-ci-token
           key: token
 
-  # Plugins críticos para CasC deben ir aquí
   additionalPlugins:
     - "credentials:1311.v2306d7367663"
     - "plain-credentials:1.10"
 
-  # Plugins estándar
   installPlugins:
     - kubernetes
     - workflow-aggregator
@@ -109,43 +107,3 @@ controller:
                       id: "github-ci-token"
                       secret: "${GITHUB_TOKEN}"
                       description: "GitHub Token for Push from Jenkins"
-
-  sidecars:
-    configAutoReload:
-      enabled: true
-
-  securityContext:
-    runAsUser: 1000
-    runAsGroup: 1000
-    fsGroup: 1000
-
-  volumes:
-    - name: docker-storage
-      emptyDir: {}
-    - name: docker-bin
-      emptyDir: {}
-
-  volumeMounts:
-    - name: docker-bin
-      mountPath: /usr/local/bin
-
-agent:
-  podName: "jenkins-agent"
-  customJenkinsLabels:
-    - jenkins-agent
-  nodeUsageMode: NORMAL
-  containers:
-    - name: jnlp
-      image: "jenkins/inbound-agent:alpine"
-      ttyEnabled: true
-  connectTimeout: 100
-  runAsUser: 1000
-
-persistence:
-  enabled: true
-  storageClass: local-path
-  size: 8Gi
-
-service:
-  type: ClusterIP
-  agentListenerPort: 50000
