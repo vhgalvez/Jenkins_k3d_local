@@ -12,6 +12,12 @@ set -a
 source .env
 set +a
 
+# Verificar que las variables están correctamente cargadas
+if [[ -z "${JENKINS_ADMIN_USER:-}" || -z "${JENKINS_ADMIN_PASSWORD:-}" || -z "${DOCKERHUB_USERNAME:-}" || -z "${DOCKERHUB_TOKEN:-}" || -z "${GITHUB_TOKEN:-}" ]]; then
+    echo "❌ Las variables de entorno necesarias no están definidas en el archivo .env."
+    exit 1
+fi
+
 NAMESPACE="jenkins"
 RELEASE="jenkins-local-k3d"
 CHART="jenkins/jenkins"
@@ -44,7 +50,10 @@ if helm status "$RELEASE" -n "$NAMESPACE" &>/dev/null; then
     echo "🧹 Eliminando PVCs asociados..."
     kubectl delete pvc -l app.kubernetes.io/instance="$RELEASE" -n "$NAMESPACE" --ignore-not-found
     
-    echo "🧼 Eliminando namespace '$NAMESPACE'..."
+    echo "🧼 Eliminando recursos asociados..."
+    kubectl delete all -l app.kubernetes.io/instance="$RELEASE" -n "$NAMESPACE" --ignore-not-found
+    
+    echo "⏳ Eliminando namespace '$NAMESPACE'..."
     kubectl delete namespace "$NAMESPACE" --ignore-not-found
     
     echo "⏳ Esperando a que el namespace se elimine completamente..."
@@ -71,7 +80,9 @@ helm repo update
 echo "📦 Instalando Jenkins con Helm..."
 helm upgrade --install "$RELEASE" "$CHART" \
 -n "$NAMESPACE" \
--f jenkins-values.yaml
+--create-namespace \
+-f jenkins-values.yaml \
+--timeout 10m
 
 # 6. Esperar que Jenkins esté listo
 echo "⏳ Esperando a que Jenkins esté listo..."
@@ -85,7 +96,7 @@ while [[ $elapsed -lt $timeout ]]; do
 done
 
 if [[ $elapsed -ge $timeout ]]; then
-    echo "⚠️  Error en el despliegue. Logs:"
+    echo "⚠️ Error en el despliegue. Logs:"
     kubectl get pods -n "$NAMESPACE"
     kubectl logs -n "$NAMESPACE" pod/"$RELEASE"-0 -c jenkins || true
     exit 1
