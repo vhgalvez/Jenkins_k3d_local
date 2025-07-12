@@ -37,15 +37,22 @@ controller:
           name: github-ci-token
           key: token
 
+  # Moved 'credentials' and 'plain-credentials' here for early installation
+  additionalPlugins:
+    - name: "credentials"
+      version: "1311.v2306d7367663" # Or the version you desire
+    - name: "plain-credentials"
+      version: "1.10" # Or the version you desire
+
   installPlugins:
+    # Keep other plugins here that should be installed by the standard mechanism
     - kubernetes
     - workflow-aggregator
     - git
     - docker-workflow
     - blueocean
     - configuration-as-code
-    - credentials-binding
-    - plain-credentials
+    - credentials-binding # This also depends on 'credentials', but 'credentials' will be installed by additionalPlugins now.
 
   JCasC:
     enabled: true
@@ -58,7 +65,7 @@ controller:
               allowsSignup: false
               enableCaptcha: false
               users:
-                - id: "${JENKINS_ADMIN_USER}"  # Estas credenciales aún se necesitan para el securityRealm
+                - id: "${JENKINS_ADMIN_USER}"
                   password: "${JENKINS_ADMIN_PASSWORD}"
 
           authorizationStrategy:
@@ -91,19 +98,19 @@ controller:
                         resourceLimitCpu: "500m"
                         resourceLimitMemory: "512Mi"
 
-          credentials:
-            system:
-              domainCredentials:
-                - credentials:
-                    - usernamePassword:
-                        id: "dockerhub-credentials"
-                        username: "${DOCKERHUB_USERNAME}"
-                        password: "${DOCKERHUB_TOKEN}"
-                        description: "DockerHub Access Token for CI/CD"
-                    - secretText:
-                        id: "github-ci-token"
-                        secret: "${GITHUB_TOKEN}"
-                        description: "GitHub Token for Push from Jenkins"
+        credentials:
+          system:
+            domainCredentials:
+              - credentials:
+                  - usernamePassword:
+                      id: "dockerhub-credentials"
+                      username: "${DOCKERHUB_USERNAME}"
+                      password: "${DOCKERHUB_TOKEN}"
+                      description: "DockerHub Access Token for CI/CD"
+                  - secretText:
+                      id: "github-ci-token"
+                      secret: "${GITHUB_TOKEN}"
+                      description: "GitHub Token for Push from Jenkins"
 
   sidecars:
     configAutoReload:
