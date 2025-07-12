@@ -2,7 +2,7 @@
 controller:
   image:
     repository: jenkins/jenkins
-    tag: "2.518-jdk21"
+    tag: "2.518-jdk21" # Última versión disponible
     pullPolicy: IfNotPresent
 
   admin:
@@ -37,16 +37,15 @@ controller:
           name: github-ci-token
           key: token
 
-  # --- CORRECCIÓN 1: Versiones de plugins fijadas ---
   installPlugins:
-    - kubernetes:4201.v7a_c54b_a_24151
-    - workflow-aggregator:2.7
-    - git:5.2.2
-    - docker-workflow:578.v2b_d19b_853031
-    - blueocean:1.27.12
-    - configuration-as-code:2063.v43d90f230449
-    - credentials-binding:687.v619cb_15e923f
-    - plain-credentials:195.vb_906e9073dee
+    - kubernetes
+    - workflow-aggregator
+    - git
+    - docker-workflow
+    - blueocean
+    - configuration-as-code
+    - credentials-binding
+    - plain-credentials
 
   JCasC:
     enabled: true
@@ -72,7 +71,6 @@ controller:
                 serverUrl: "https://kubernetes.default"
                 skipTlsVerify: true
                 namespace: "jenkins"
-                # --- CORRECCIÓN 2: Nombres de servicio dinámicos ---
                 jenkinsUrl: "http://{{ .Release.Name }}-jenkins:8080"
                 jenkinsTunnel: "{{ .Release.Name }}-jenkins-agent:50000"
                 containerCap: 10
