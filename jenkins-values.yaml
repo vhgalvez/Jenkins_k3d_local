@@ -47,8 +47,8 @@ controller:
     - configuration-as-code
     - credentials-binding
     - ssh-credentials
-    - credentials # Ensure credentials plugin is installed (moved to the top)
-    - plain-credentials # Ensure plain-credentials is installed (moved to the top)
+    - credentials # Ensure credentials plugin is installed
+    - plain-credentials # Ensure plain-credentials is installed
 
   resources:
     requests:
@@ -103,7 +103,13 @@ controller:
                         resourceLimitCpu: "500m"
                         resourceLimitMemory: "512Mi"
 
-        credentials: # Correct indentation of credentials section
+        # --- NEW ADDITION HERE ---
+        unclassified:
+          casc:
+            initializationTimeout: 300 # Give JCasC up to 300 seconds (5 minutes) to apply config
+        # --- END NEW ADDITION ---
+
+        credentials:
           system:
             domainCredentials:
               - credentials:
