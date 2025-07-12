@@ -1,4 +1,5 @@
 # jenkins-values.yaml
+# jenkins-values.yaml
 controller:
   image:
     repository: jenkins/jenkins
@@ -21,7 +22,6 @@ controller:
         secretKeyRef:
           name: jenkins-admin
           key: jenkins-admin-password
-    # Añadir esta sección para que JCasC pueda usar la contraseña hash
     - name: JENKINS_ADMIN_PASSWORD_HASH
       valueFrom:
         secretKeyRef:
@@ -121,10 +121,10 @@ controller:
                       username: "${DOCKERHUB_USERNAME}"
                       password: "${DOCKERHUB_TOKEN}"
                       description: "DockerHub Access Token for CI/CD"
-                  - secretText:
-                      id: "github-ci-token"
-                      secret: "${GITHUB_TOKEN}"
-                      description: "GitHub Token for Push from Jenkins"
+                # - secretText: # <--- Comenta esta línea
+                #    id: "github-ci-token"
+                #    secret: "${GITHUB_TOKEN}"
+                #    description: "GitHub Token for Push from Jenkins"
 
   sidecars:
     configAutoReload:
