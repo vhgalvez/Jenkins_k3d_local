@@ -22,11 +22,11 @@ fi
 if [[ -z "${JENKINS_ADMIN_PASSWORD_HASH:-}" ]]; then
     echo "🔑 Generando el hash para la contraseña..."
     
-    # Generar el hash bcrypt y asegurarse de que tenga el prefijo "#jbcrypt:"
-    JENKINS_ADMIN_PASSWORD_HASH=$(python3 -c "import bcrypt; password = '${JENKINS_ADMIN_PASSWORD}'; hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt(12)).decode('utf-8'); print('#jbcrypt:' + hash)")
+    # Generar el hash bcrypt sin el prefijo "#jbcrypt:" (se agrega solo en el archivo JCasC)
+    JENKINS_ADMIN_PASSWORD_HASH=$(python3 -c "import bcrypt; password = '${JENKINS_ADMIN_PASSWORD}'; hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt(12)).decode('utf-8'); print(hash)")
     
     # Asegurarse de que el hash tenga el formato correcto
-    if [[ -z "$JENKINS_ADMIN_PASSWORD_HASH" || ! "$JENKINS_ADMIN_PASSWORD_HASH" =~ ^#jbcrypt:\$2a\$.+ ]]; then
+    if [[ -z "$JENKINS_ADMIN_PASSWORD_HASH" || ! "$JENKINS_ADMIN_PASSWORD_HASH" =~ ^\$2b\$.+ ]]; then
         echo "❌ Error: El hash de la contraseña no se generó correctamente o no tiene el formato esperado."
         exit 1
     fi
