@@ -37,12 +37,10 @@ controller:
           name: github-ci-token
           key: token
 
-  # Moved 'credentials' and 'plain-credentials' here for early installation
+  # Fix for additionalPlugins format: List of plugin names and versions (not a map)
   additionalPlugins:
-    - name: "credentials"
-      version: "1311.v2306d7367663" # Or the version you desire
-    - name: "plain-credentials"
-      version: "1.10" # Or the version you desire
+    - "credentials:1311.v2306d7367663" # Or the version you desire
+    - "plain-credentials:1.10" # Or the version you desire
 
   installPlugins:
     # Keep other plugins here that should be installed by the standard mechanism
@@ -52,7 +50,7 @@ controller:
     - docker-workflow
     - blueocean
     - configuration-as-code
-    - credentials-binding # This also depends on 'credentials', but 'credentials' will be installed by additionalPlugins now.
+    - credentials-binding
 
   JCasC:
     enabled: true
