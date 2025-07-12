@@ -21,11 +21,6 @@ controller:
         secretKeyRef:
           name: jenkins-admin
           key: jenkins-admin-password
-    - name: JENKINS_ADMIN_PASSWORD_HASH # Nueva variable de entorno para el hash de la contraseña
-      valueFrom:
-        secretKeyRef:
-          name: jenkins-admin
-          key: jenkins-admin-password # La clave que contiene el hash de la contraseña
     - name: DOCKERHUB_USERNAME
       valueFrom:
         secretKeyRef:
@@ -75,7 +70,7 @@ controller:
               enableCaptcha: false
               users:
                 - id: "${JENKINS_ADMIN_USER}"
-                  password: "#jbcrypt:${JENKINS_ADMIN_PASSWORD_HASH}"  # Usando el hash de la contraseña
+                  password: "#jbcrypt:${JENKINS_ADMIN_PASSWORD_HASH}"
 
           authorizationStrategy:
             loggedInUsersCanDoAnything:
@@ -109,7 +104,7 @@ controller:
 
         unclassified:
           casc:
-            initializationTimeout: 300  # Asegura que JCasC se aplique dentro de 5 minutos
+            initializationTimeout: 300
 
         credentials:
           system:
