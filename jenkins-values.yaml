@@ -37,13 +37,13 @@ controller:
           name: github-ci-token
           key: token
 
-  # Fix for additionalPlugins format: List of plugin names and versions (not a map)
+  # Moved plugins here to avoid conflict
   additionalPlugins:
-    - "credentials:1311.v2306d7367663" # Or the version you desire
-    - "plain-credentials:1.10" # Or the version you desire
+    - "credentials:1311.v2306d7367663"
+    - "plain-credentials:1.10"
 
   installPlugins:
-    # Keep other plugins here that should be installed by the standard mechanism
+    # Removed credentials and plain-credentials here as they are handled in additionalPlugins
     - kubernetes
     - workflow-aggregator
     - git
