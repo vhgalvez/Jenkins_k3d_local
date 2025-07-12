@@ -21,13 +21,13 @@ fi
 # Generar el hash BCrypt para la contraseña directamente en memoria si no está presente
 if [[ -z "${JENKINS_ADMIN_PASSWORD_HASH:-}" ]]; then
     echo "🔑 Generando el hash para la contraseña..."
-    JENKINS_ADMIN_PASSWORD_HASH=$(htpasswd -bnBC 10 "" "$JENKINS_ADMIN_PASSWORD" | tr -d ':\n')
+    JENKINS_ADMIN_PASSWORD_HASH=$(python3 -c "import bcrypt; print(bcrypt.hashpw('$JENKINS_ADMIN_PASSWORD'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'))")
     echo "✅ Hash de la contraseña generado."
 fi
 
 # Asegurarse de que la variable de hash esté correctamente seteada
 if [[ -z "$JENKINS_ADMIN_PASSWORD_HASH" ]]; then
-    echo "❌ No se pudo generar el hash de la contraseña. Asegúrate de que htpasswd esté instalado correctamente."
+    echo "❌ No se pudo generar el hash de la contraseña. Asegúrate de que Python esté instalado correctamente."
     exit 1
 fi
 

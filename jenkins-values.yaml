@@ -21,6 +21,12 @@ controller:
         secretKeyRef:
           name: jenkins-admin
           key: jenkins-admin-password
+    # Añadir esta sección para que JCasC pueda usar la contraseña hash
+    - name: JENKINS_ADMIN_PASSWORD_HASH
+      valueFrom:
+        secretKeyRef:
+          name: jenkins-admin
+          key: jenkins-admin-password # El secreto debe tener el hash bcrypt
     - name: DOCKERHUB_USERNAME
       valueFrom:
         secretKeyRef:
