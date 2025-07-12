@@ -21,6 +21,7 @@ fi
 # Generar el hash BCrypt para la contraseña directamente en memoria si no está presente
 if [[ -z "${JENKINS_ADMIN_PASSWORD_HASH:-}" ]]; then
     echo "🔑 Generando el hash para la contraseña..."
+    # Generamos el hash bcrypt y aseguramos que tenga el prefijo "#jbcrypt:"
     JENKINS_ADMIN_PASSWORD_HASH=$(python3 -c "import bcrypt; print('#jbcrypt:' + bcrypt.hashpw('$JENKINS_ADMIN_PASSWORD'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'))")
     echo "✅ Hash de la contraseña generado."
 fi
