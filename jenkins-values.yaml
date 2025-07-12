@@ -25,16 +25,14 @@ controller:
   installPlugins:
     - kubernetes
     - workflow-aggregator
-    - git
+    - git:5.7.0
     - docker-workflow
     - blueocean
-    - configuration-as-code
+    - configuration-as-code:1903.v004d55388f30 # Actualizado
     - credentials-binding
     - ssh-credentials
-    - credentials
+    - credentials:1408.va_622a_b_f5b_1b_1 # Actualizado
     - plain-credentials
-    - "credentials:2" # Asegurarse de que el complemento de credenciales esté especificado correctamente
-    - "configuration-as-code:1.51" # Verificar la versión correcta del plugin
 
   resources:
     requests:
@@ -58,11 +56,9 @@ controller:
               users:
                 - id: "${JENKINS_ADMIN_USER}"
                   password: "#jbcrypt:${JENKINS_ADMIN_PASSWORD_HASH}"
-
           authorizationStrategy:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
-
           clouds:
             - kubernetes:
                 name: "kubernetes"
