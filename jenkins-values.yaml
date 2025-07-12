@@ -25,13 +25,13 @@ controller:
   installPlugins:
     - kubernetes
     - workflow-aggregator
-    - git:5.7.0
+    - git
     - docker-workflow
     - blueocean
-    - configuration-as-code:1963.v24e046127a_3f # Actualizado a la versión correcta
+    - configuration-as-code
     - credentials-binding
     - ssh-credentials
-    - credentials:1415.v831096eb_5534 # Actualizado a la versión correcta
+    - credentials
     - plain-credentials
 
   resources:
