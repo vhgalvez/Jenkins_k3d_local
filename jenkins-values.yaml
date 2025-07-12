@@ -47,10 +47,8 @@ controller:
     - configuration-as-code
     - credentials-binding
     - ssh-credentials
-
-  additionalPlugins:
-    - "credentials"
-    - "plain-credentials"
+    - plain-credentials # Ensure plain-credentials is installed
+    - credentials # Ensure credentials plugin is installed
 
   resources:
     requests:
@@ -104,10 +102,8 @@ controller:
                         resourceRequestMemory: "128Mi"
                         resourceLimitCpu: "500m"
                         resourceLimitMemory: "512Mi"
-        # --- IMPORTANT CHANGE HERE ---
-        # The 'credentials' block should be at the same level as 'jenkins:'
-        # and 'unclassified:' not nested under 'jenkins:'.
-        credentials:
+
+        credentials: # Correct indentation of credentials section
           system:
             domainCredentials:
               - credentials:
