@@ -1,3 +1,4 @@
+# jenkins-plugins-configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -16,4 +17,5 @@ data:
     blueocean:1.27.0        # Un plugin común para UI
     credentials:1311.v2306d7367663 # Plugin de credenciales
     cloudbees-folder:6.858.v635564cdb_a_a_c # Plugin de carpetas
+
     # Añade aquí cualquier otro plugin que necesites, especificando la versión
