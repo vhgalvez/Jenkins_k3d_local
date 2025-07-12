@@ -37,11 +37,10 @@ controller:
           name: github-ci-token
           key: token
 
-  # Lista de plugins a instalar
   installPlugins:
-    - kubernetes:1.31.2 # Versión más reciente estable de kubernetes
+    - kubernetes:1.31.3
     - workflow-aggregator:2.6
-    - git:5.7.1 # Versión más reciente estable de git
+    - git:5.3.0  # Verificar compatibilidad
     - docker-workflow:621.va_73f881d9232
     - blueocean:1.24.7
     - configuration-as-code:1.53
@@ -51,16 +50,14 @@ controller:
     - "credentials:1311.v2306d7367663"
     - "plain-credentials:1.10"
 
-  # Recursos solicitados y limitados para el contenedor de Jenkins
   resources:
     requests:
-      cpu: "2000m" # Aumento a 2 CPU
-      memory: "6Gi" # Aumento a 6 GB de memoria
+      cpu: "2000m"
+      memory: "6Gi"
     limits:
-      cpu: "4000m" # Aumento a 4 CPU
-      memory: "8Gi" # Aumento a 8 GB de memoria
+      cpu: "4000m"
+      memory: "8Gi"
 
-  # Configuración de Jenkins como código
   JCasC:
     enabled: true
     defaultConfig: false
