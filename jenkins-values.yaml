@@ -13,29 +13,19 @@ controller:
   containerEnv:
     - name: JENKINS_ADMIN_USER
       valueFrom:
-        secretKeyRef:
-          name: jenkins-admin
-          key: jenkins-admin-user
+        secretKeyRef: { name: jenkins-admin, key: jenkins-admin-user }
     - name: JENKINS_ADMIN_PASSWORD
       valueFrom:
-        secretKeyRef:
-          name: jenkins-admin
-          key: jenkins-admin-password
+        secretKeyRef: { name: jenkins-admin, key: jenkins-admin-password }
     - name: DOCKERHUB_USERNAME
       valueFrom:
-        secretKeyRef:
-          name: dockerhub-credentials
-          key: username
+        secretKeyRef: { name: dockerhub-credentials, key: username }
     - name: DOCKERHUB_TOKEN
       valueFrom:
-        secretKeyRef:
-          name: dockerhub-credentials
-          key: password
+        secretKeyRef: { name: dockerhub-credentials, key: password }
     - name: GITHUB_TOKEN
       valueFrom:
-        secretKeyRef:
-          name: github-ci-token
-          key: token
+        secretKeyRef: { name: github-ci-token, key: token }
 
   additionalPlugins:
     - "credentials:1311.v2306d7367663"
@@ -107,3 +97,43 @@ controller:
                       id: "github-ci-token"
                       secret: "${GITHUB_TOKEN}"
                       description: "GitHub Token for Push from Jenkins"
+
+  sidecars:
+    configAutoReload:
+      enabled: true
+
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+
+  volumes:
+    - name: docker-storage
+      emptyDir: {}
+    - name: docker-bin
+      emptyDir: {}
+
+  volumeMounts:
+    - name: docker-bin
+      mountPath: /usr/local/bin
+
+agent:
+  podName: "jenkins-agent"
+  customJenkinsLabels:
+    - jenkins-agent
+  nodeUsageMode: NORMAL
+  containers:
+    - name: jnlp
+      image: "jenkins/inbound-agent:alpine"
+      ttyEnabled: true
+  connectTimeout: 100
+  runAsUser: 1000
+
+persistence:
+  enabled: true
+  storageClass: local-path
+  size: 8Gi
+
+service:
+  type: ClusterIP
+  agentListenerPort: 50000
