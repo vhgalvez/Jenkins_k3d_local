@@ -35,6 +35,14 @@ NAMESPACE="jenkins"
 RELEASE="jenkins-local-k3d"
 CHART="jenkins/jenkins"
 
+# --- Función para eliminar secretos de Jenkins ---
+delete_secrets() {
+    echo "🗑️ Eliminando secretos de Jenkins existentes..."
+    kubectl delete secret jenkins-admin -n "$NAMESPACE" || true
+    kubectl delete secret dockerhub-credentials -n "$NAMESPACE" || true
+    kubectl delete secret github-ci-token -n "$NAMESPACE" || true
+}
+
 # --- Función para crear secrets en Kubernetes ---
 create_secrets() {
     echo "🔑 (Re)Creando secretos necesarios en el namespace '$NAMESPACE'..."
@@ -78,21 +86,24 @@ if helm status "$RELEASE" -n "$NAMESPACE" &>/dev/null; then
     done
 fi
 
-# 2. Crear namespace
+# 2. Eliminar secretos de Jenkins
+delete_secrets
+
+# 3. Crear namespace
 echo "🚀 Creando namespace '$NAMESPACE'..."
 kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 
-# 3. Crear Secrets
+# 4. Crear Secrets
 create_secrets
 
-# 4. Añadir repositorio Helm de Jenkins si no está
+# 5. Añadir repositorio Helm de Jenkins si no está
 if ! helm repo list | grep -qE '^jenkins\s'; then
     echo "➕ Añadiendo repositorio Helm de Jenkins..."
     helm repo add jenkins https://charts.jenkins.io
 fi
 helm repo update
 
-# 5. Instalar Jenkins con Helm
+# 6. Instalar Jenkins con Helm
 echo "📦 Instalando Jenkins con Helm..."
 helm upgrade --install "$RELEASE" "$CHART" \
 -n "$NAMESPACE" \
@@ -100,7 +111,7 @@ helm upgrade --install "$RELEASE" "$CHART" \
 -f jenkins-values.yaml \
 --timeout 10m
 
-# 6. Esperar que Jenkins esté listo
+# 7. Esperar que Jenkins esté listo
 echo "⏳ Esperando a que Jenkins esté listo..."
 timeout=300
 elapsed=0
@@ -118,7 +129,7 @@ if [[ $elapsed -ge $timeout ]]; then
     exit 1
 fi
 
-# 7. Mostrar acceso
+# 8. Mostrar acceso
 echo "✅ Jenkins desplegado correctamente. Pods:"
 kubectl get pods -n "$NAMESPACE"
 
