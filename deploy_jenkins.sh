@@ -24,15 +24,21 @@ if [[ -z "${JENKINS_ADMIN_PASSWORD_HASH:-}" ]]; then
     
     # Generar el hash bcrypt y asegurarse de que tenga el prefijo "#jbcrypt:"
     JENKINS_ADMIN_PASSWORD_HASH=$(python3 -c "import bcrypt; password = '${JENKINS_ADMIN_PASSWORD}'; hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'); print('#jbcrypt:' + hash)")
-    
+
     # Asegurarse de que el hash tenga el formato correcto
     if [[ -z "$JENKINS_ADMIN_PASSWORD_HASH" || ! "$JENKINS_ADMIN_PASSWORD_HASH" =~ ^#jbcrypt:\$2b\$.+ ]]; then
         echo "❌ Error: El hash de la contraseña no se generó correctamente o no tiene el formato esperado."
         exit 1
     fi
-    
+
     echo "✅ Hash de la contraseña generado correctamente."
 fi
+
+# Verificar y mostrar el valor del hash
+echo "🔒 Hash de la contraseña: $JENKINS_ADMIN_PASSWORD_HASH"
+
+# Guardar el hash en el archivo .env
+echo "JENKINS_ADMIN_PASSWORD_HASH=${JENKINS_ADMIN_PASSWORD_HASH}" >> .env
 
 # Asegurarse de que la variable de hash esté correctamente seteada
 if [[ -z "$JENKINS_ADMIN_PASSWORD_HASH" ]]; then
