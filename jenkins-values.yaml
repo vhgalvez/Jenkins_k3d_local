@@ -13,32 +13,50 @@ controller:
   containerEnv:
     - name: JENKINS_ADMIN_USER
       valueFrom:
-        secretKeyRef: { name: jenkins-admin, key: jenkins-admin-user }
+        secretKeyRef:
+          name: jenkins-admin
+          key: jenkins-admin-user
     - name: JENKINS_ADMIN_PASSWORD
       valueFrom:
-        secretKeyRef: { name: jenkins-admin, key: jenkins-admin-password }
+        secretKeyRef:
+          name: jenkins-admin
+          key: jenkins-admin-password
     - name: DOCKERHUB_USERNAME
       valueFrom:
-        secretKeyRef: { name: dockerhub-credentials, key: username }
+        secretKeyRef:
+          name: dockerhub-credentials
+          key: username
     - name: DOCKERHUB_TOKEN
       valueFrom:
-        secretKeyRef: { name: dockerhub-credentials, key: password }
+        secretKeyRef:
+          name: dockerhub-credentials
+          key: password
     - name: GITHUB_TOKEN
       valueFrom:
-        secretKeyRef: { name: github-ci-token, key: token }
+        secretKeyRef:
+          name: github-ci-token
+          key: token
 
   additionalPlugins:
     - "credentials:1311.v2306d7367663"
     - "plain-credentials:1.10"
 
   installPlugins:
-    - kubernetes
-    - workflow-aggregator
-    - git
-    - docker-workflow
-    - blueocean
-    - configuration-as-code
-    - credentials-binding
+    - kubernetes:1.30.1
+    - workflow-aggregator:2.6
+    - git:4.9.0
+    - docker-workflow:1.26.0
+    - blueocean:1.24.7
+    - configuration-as-code:1.53
+    - credentials-binding:1.27
+
+  resources:
+    requests:
+      cpu: "500m" # Solicitar medio núcleo
+      memory: "1Gi" # Solicitar 1 GB de memoria
+    limits:
+      cpu: "1000m" # Limitar a 1 núcleo
+      memory: "2Gi" # Limitar a 2 GB de memoria
 
   JCasC:
     enabled: true
