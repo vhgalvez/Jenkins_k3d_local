@@ -179,15 +179,20 @@ service:
 
 # Jenkins plugins configuration
 installPlugins:
-  - kubernetes:4273.v4c21e0ae0a2e
-  - workflow-aggregator:600.vb_57cdd26fdd7
-  - git:5.4.1
-  - configuration-as-code:1810.v9b_c30a_249a_4c
-  - credentials-binding:677.vdc9d38cb_254d
-  - ssh-credentials:337.v395d2403ccd4
-  - credentials:1400.v7fd8f8b_c72d2
-  - plain-credentials:183.va_de8f1dd5a_2b_
-  - github-oauth:597.ve0c3480fcb_d0
-  - role-strategy:727.vd344b_eec783d
-  - blueocean:1.27.14
-  - docker-workflow:580.vc0c340686b_54
+  - kubernetes
+  - workflow-aggregator
+  - git
+  - docker-workflow
+  - blueocean
+  - configuration-as-code
+  - credentials-binding
+  - ssh-credentials
+  - credentials
+  - plain-credentials
+  - active-directory
+  - github-oauth
+  - role-strategy
+  - jwt-auth
+  - authentication-tokens
+  - url-auth-sso
+  - configuration-as-code-support
