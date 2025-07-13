@@ -53,7 +53,7 @@ controller:
               enableCaptcha: false
               users:
                 - id: "${JENKINS_ADMIN_USER}"
-                  passwordHash: "${JENKINS_ADMIN_PASSWORD_HASH}"
+                  passwordHash: "${JENKINS_ADMIN_PASSWORD_HASH}"  # Aquí se utiliza el hash con el prefijo #jbcrypt
           authorizationStrategy:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
@@ -84,9 +84,8 @@ controller:
                         resourceLimitMemory: "512Mi"
 
         unclassified:
-          location:
-            adminAddress: "admin@jenkins.local"
-            url: "http://jenkins.local"
+          casc:
+            initializationTimeout: 600
 
         credentials:
           system:
@@ -154,21 +153,6 @@ controller:
     failureThreshold: 18
     timeoutSeconds: 5
 
-  # Jenkins plugins configuration - DEBE estar dentro de controller
-  installPlugins:
-    - kubernetes
-    - workflow-aggregator
-    - git
-    - docker-workflow
-    - blueocean
-    - configuration-as-code
-    - credentials-binding
-    - ssh-credentials
-    - credentials
-    - plain-credentials
-    - github-oauth
-    - role-strategy
-
 # Jenkins agent configuration
 agent:
   podName: "jenkins-agent"
@@ -192,3 +176,23 @@ persistence:
 service:
   type: ClusterIP
   agentListenerPort: 50000
+
+# Jenkins plugins configuration
+installPlugins:
+  - kubernetes
+  - workflow-aggregator
+  - git
+  - docker-workflow
+  - blueocean
+  - configuration-as-code
+  - credentials-binding
+  - ssh-credentials
+  - credentials
+  - plain-credentials
+  - active-directory
+  - github-oauth
+  - role-strategy
+  - jwt-auth
+  - authentication-tokens
+  - url-auth-sso
+  - configuration-as-code-support
