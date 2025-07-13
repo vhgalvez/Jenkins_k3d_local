@@ -161,4 +161,5 @@ cat <<EOF
 EOF
 
 echo "🔗 Iniciando port-forward..."
+
 kubectl port-forward -n "$NAMESPACE" svc/"$RELEASE" 8080:8080
