@@ -78,7 +78,7 @@ controller:
               enableCaptcha: false
               users:
                 - id: "${JENKINS_ADMIN_USER}"
-                  password: "${JENKINS_ADMIN_PASSWORD_HASH}"
+                  password: "${JENKINS_ADMIN_PASSWORD_HASH}"  # Usamos directamente el hash con el prefijo #jbcrypt: 
           authorizationStrategy:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
