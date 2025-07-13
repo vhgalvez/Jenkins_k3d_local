@@ -23,17 +23,14 @@ fi
 if [[ -z "${JENKINS_ADMIN_PASSWORD_HASH:-}" ]]; then
     echo "🔑 Generando el hash para la contraseña..."
     
-    # Generar el hash bcrypt SIN el prefijo "#jbcrypt:" (lo agregamos después)
-    RAW_HASH=$(python3 -c "import bcrypt; password = '${JENKINS_ADMIN_PASSWORD}'; hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt(12)).decode('utf-8'); print(hash)")
+    # Generar el hash bcrypt SIN el prefijo "#jbcrypt:" (JCasC lo agrega automáticamente)
+    JENKINS_ADMIN_PASSWORD_HASH=$(python3 -c "import bcrypt; password = '${JENKINS_ADMIN_PASSWORD}'; hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt(12)).decode('utf-8'); print(hash)")
     
     # Asegurarse de que el hash tenga el formato correcto
-    if [[ -z "$RAW_HASH" || ! "$RAW_HASH" =~ ^\$2b\$.+ && ! "$RAW_HASH" =~ ^\$2a\$.+ ]]; then
+    if [[ -z "$JENKINS_ADMIN_PASSWORD_HASH" || ! "$JENKINS_ADMIN_PASSWORD_HASH" =~ ^\$2b\$.+ && ! "$JENKINS_ADMIN_PASSWORD_HASH" =~ ^\$2a\$.+ ]]; then
         echo "❌ Error: El hash de la contraseña no se generó correctamente o no tiene el formato esperado."
         exit 1
     fi
-    
-    # Añadir el prefijo #jbcrypt: al hash generado
-    JENKINS_ADMIN_PASSWORD_HASH="#jbcrypt:${RAW_HASH}"
     
     echo "✅ Hash de la contraseña generado correctamente."
     echo "🔒 Hash generado: $JENKINS_ADMIN_PASSWORD_HASH"
@@ -42,21 +39,32 @@ if [[ -z "${JENKINS_ADMIN_PASSWORD_HASH:-}" ]]; then
     if grep -q "JENKINS_ADMIN_PASSWORD_HASH=" .env; then
         # Si ya existe, reemplázalo
         echo "Reemplazando el hash de la contraseña en .env..."
-        sudo sed -i "s|JENKINS_ADMIN_PASSWORD_HASH=.*|JENKINS_ADMIN_PASSWORD_HASH=${JENKINS_ADMIN_PASSWORD_HASH}|" .env
+        sed -i "s|JENKINS_ADMIN_PASSWORD_HASH=.*|JENKINS_ADMIN_PASSWORD_HASH=${JENKINS_ADMIN_PASSWORD_HASH}|" .env
     else
         # Si no existe, agrégalo
-        echo "JENKINS_ADMIN_PASSWORD_HASH=${JENKINS_ADMIN_PASSWORD_HASH}" | sudo tee -a .env > /dev/null
+        echo "JENKINS_ADMIN_PASSWORD_HASH=${JENKINS_ADMIN_PASSWORD_HASH}" >> .env
     fi
 else
     echo "✅ Hash de contraseña ya existe en .env"
     echo "🔒 Hash existente: $JENKINS_ADMIN_PASSWORD_HASH"
     
-    # Verificar que el hash tenga el formato correcto
-    if [[ ! "$JENKINS_ADMIN_PASSWORD_HASH" =~ ^#jbcrypt:\$2[ab]\$.+ ]]; then
+    # Verificar que el hash tenga el formato correcto (sin prefijo #jbcrypt:)
+    if [[ ! "$JENKINS_ADMIN_PASSWORD_HASH" =~ ^\$2[ab]\$.+ ]]; then
         echo "❌ Error: El hash de la contraseña no tiene el formato correcto."
-        echo "Formato esperado: #jbcrypt:\$2b\$12\$..."
+        echo "Formato esperado: \$2b\$12\$..."
         echo "Formato actual: $JENKINS_ADMIN_PASSWORD_HASH"
-        exit 1
+        
+        # Si tiene el prefijo #jbcrypt:, removerlo
+        if [[ "$JENKINS_ADMIN_PASSWORD_HASH" =~ ^#jbcrypt: ]]; then
+            echo "🔧 Removiendo prefijo #jbcrypt: del hash..."
+            JENKINS_ADMIN_PASSWORD_HASH="${JENKINS_ADMIN_PASSWORD_HASH#'#jbcrypt:'}"
+            echo "🔒 Hash corregido: $JENKINS_ADMIN_PASSWORD_HASH"
+            
+            # Actualizar el archivo .env
+            sed -i "s|JENKINS_ADMIN_PASSWORD_HASH=.*|JENKINS_ADMIN_PASSWORD_HASH=${JENKINS_ADMIN_PASSWORD_HASH}|" .env
+        else
+            exit 1
+        fi
     fi
 fi
 
@@ -76,7 +84,7 @@ delete_secrets() {
 create_secrets() {
     echo "🔑 (Re)Creando secretos necesarios en el namespace '$NAMESPACE'..."
     
-    # Crear el secreto jenkins-admin con el usuario y la contraseña hash
+    # Crear el secreto jenkins-admin con el usuario y la contraseña hash (SIN prefijo #jbcrypt:)
     kubectl create secret generic jenkins-admin \
     --from-literal=jenkins-admin-user="$JENKINS_ADMIN_USER" \
     --from-literal=jenkins-admin-password="$JENKINS_ADMIN_PASSWORD_HASH" \
@@ -161,9 +169,6 @@ fi
 echo "✅ Jenkins desplegado correctamente. Pods:"
 kubectl get pods -n "$NAMESPACE"
 
-# Extraer solo la contraseña sin el prefijo para mostrar al usuario
-DISPLAY_PASSWORD=$(echo "$JENKINS_ADMIN_PASSWORD_HASH" | sed 's/^#jbcrypt://')
-
 cat <<EOF
 
 🌐 Accede a Jenkins en tu navegador:
@@ -173,11 +178,11 @@ cat <<EOF
 🔒 Contraseña:  $JENKINS_ADMIN_PASSWORD
 
 📝 Nota: La contraseña se almacena como hash bcrypt en Kubernetes
-🔑 Hash completo: $JENKINS_ADMIN_PASSWORD_HASH
+🔑 Hash (sin prefijo): $JENKINS_ADMIN_PASSWORD_HASH
 
 (🔁 Ctrl+C para cerrar el port-forward)
 
 EOF
 
 echo "🔗 Iniciando port-forward..."
-kubectl port-forward -n "$NAMESPACE" svc/"$RELEASE" 8080:8080 &
+kubectl port-forward -n "$NAMESPACE" svc/"$RELEASE" 8080:8080
