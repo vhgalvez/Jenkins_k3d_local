@@ -53,7 +53,7 @@ controller:
               enableCaptcha: false
               users:
                 - id: "${JENKINS_ADMIN_USER}"
-                  passwordHash: "${JENKINS_ADMIN_PASSWORD_HASH}"
+                  password: "${JENKINS_ADMIN_PASSWORD_HASH}"  # Cambié "passwordHash" a "password"
           authorizationStrategy:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
