@@ -12,7 +12,7 @@ set -a
 source .env
 set +a
 
-# Verificar que las variables están correctamente cargadas
+# Verificar que las variables estén correctamente cargadas
 if [[ -z "${JENKINS_ADMIN_USER:-}" || -z "${JENKINS_ADMIN_PASSWORD:-}" || -z "${DOCKERHUB_USERNAME:-}" || -z "${DOCKERHUB_TOKEN:-}" || -z "${GITHUB_TOKEN:-}" ]]; then
     echo "❌ Las variables de entorno necesarias no están definidas en el archivo .env."
     exit 1
@@ -40,8 +40,8 @@ JENKINS_ADMIN_PASSWORD_HASH="#jbcrypt:${JENKINS_ADMIN_PASSWORD_HASH}"
 # Verificar y mostrar el valor del hash
 echo "🔒 Hash de la contraseña: $JENKINS_ADMIN_PASSWORD_HASH"
 
-# Guardar el hash en el archivo .env
-echo "JENKINS_ADMIN_PASSWORD_HASH=${JENKINS_ADMIN_PASSWORD_HASH}" > .env
+# Actualizar el hash en el archivo .env sin eliminar otros datos
+echo "JENKINS_ADMIN_PASSWORD_HASH=${JENKINS_ADMIN_PASSWORD_HASH}" >> .env
 
 # Asegurarse de que la variable de hash esté correctamente seteada
 if [[ -z "$JENKINS_ADMIN_PASSWORD_HASH" ]]; then
