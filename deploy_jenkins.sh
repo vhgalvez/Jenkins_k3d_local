@@ -41,7 +41,7 @@ if [[ -z "${JENKINS_ADMIN_PASSWORD_HASH:-}" ]]; then
     # Actualizar el archivo .env con el hash generado (evitar duplicados)
     if grep -q "JENKINS_ADMIN_PASSWORD_HASH=" .env; then
         # Si ya existe, reemplázalo
-        sed -i.bak "s|JENKINS_ADMIN_PASSWORD_HASH=.*|JENKINS_ADMIN_PASSWORD_HASH=${JENKINS_ADMIN_PASSWORD_HASH}|" .env
+        sudo sed -i.bak "s|JENKINS_ADMIN_PASSWORD_HASH=.*|JENKINS_ADMIN_PASSWORD_HASH=${JENKINS_ADMIN_PASSWORD_HASH}|" .env
     else
         # Si no existe, agrégalo
         echo "JENKINS_ADMIN_PASSWORD_HASH=${JENKINS_ADMIN_PASSWORD_HASH}" >> .env
