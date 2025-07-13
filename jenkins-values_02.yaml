@@ -1,17 +1,15 @@
-# jenkins-values.yaml
 controller:
   image:
     repository: jenkins/jenkins
     tag: "2.518-jdk21"
     pullPolicy: IfNotPresent
 
-  # Configuración del admin usando secreto existente
+  # Usamos un secreto existente para la configuración del admin
   admin:
     existingSecret: jenkins-admin
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
-  # Variables de entorno para Jenkins extraídas de secretos
   containerEnv:
     - name: JENKINS_ADMIN_USER
       valueFrom:
@@ -39,7 +37,33 @@ controller:
           name: github-ci-token
           key: token
 
-  # JCasC Configuration
+  installPlugins:
+    - kubernetes
+    - workflow-aggregator
+    - git
+    - docker-workflow
+    - blueocean
+    - configuration-as-code
+    - credentials-binding
+    - ssh-credentials
+    - credentials
+    - plain-credentials
+    - active-directory
+    - github-oauth
+    - role-strategy
+    - jwt-auth
+    - authentication-tokens
+    - url-auth-sso
+    - configuration-as-code-support
+
+  resources:
+    requests:
+      cpu: "1000m"
+      memory: "2Gi"
+    limits:
+      cpu: "2000m"
+      memory: "4Gi"
+
   JCasC:
     enabled: true
     defaultConfig: false
@@ -53,7 +77,7 @@ controller:
               enableCaptcha: false
               users:
                 - id: "${JENKINS_ADMIN_USER}"
-                  passwordHash: "${JENKINS_ADMIN_PASSWORD_HASH}"  # Aquí se utiliza el hash con el prefijo #jbcrypt
+                  password: "#jbcrypt:${JENKINS_ADMIN_PASSWORD_HASH}"
           authorizationStrategy:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
@@ -63,8 +87,8 @@ controller:
                 serverUrl: "https://kubernetes.default"
                 skipTlsVerify: true
                 namespace: "jenkins"
-                jenkinsUrl: "http://jenkins-jenkins:8080"
-                jenkinsTunnel: "jenkins-jenkins-agent:50000"
+                jenkinsUrl: "http://{{ .Release.Name }}-jenkins:8080"
+                jenkinsTunnel: "{{ .Release.Name }}-jenkins-agent:50000"
                 containerCap: 10
                 connectTimeout: 5
                 readTimeout: 15
@@ -102,38 +126,32 @@ controller:
                       password: "${GITHUB_TOKEN}"
                       description: "GitHub Token for Push from Jenkins"
 
-  # Sidecar container configuration
   sidecars:
     configAutoReload:
       enabled: true
 
-  # Security settings for Jenkins
   securityContext:
     runAsUser: 1000
     runAsGroup: 1000
     fsGroup: 1000
 
-  # Volumes configuration
   volumes:
     - name: docker-storage
       emptyDir: {}
     - name: docker-bin
       emptyDir: {}
 
-  # Volume mounts
   volumeMounts:
     - name: docker-bin
       mountPath: /usr/local/bin
 
-  # Liveness, readiness, and startup probes
   livenessProbe:
     httpGet:
       path: /login
       port: 8080
-    initialDelaySeconds: 90
+    initialDelaySeconds: 60
     periodSeconds: 10
     failureThreshold: 5
-    timeoutSeconds: 5
 
   readinessProbe:
     httpGet:
@@ -142,7 +160,6 @@ controller:
     initialDelaySeconds: 60
     periodSeconds: 10
     failureThreshold: 3
-    timeoutSeconds: 5
 
   startupProbe:
     httpGet:
@@ -150,10 +167,8 @@ controller:
       port: 8080
     initialDelaySeconds: 120
     periodSeconds: 10
-    failureThreshold: 18
-    timeoutSeconds: 5
+    failureThreshold: 12
 
-# Jenkins agent configuration
 agent:
   podName: "jenkins-agent"
   customJenkinsLabels:
@@ -166,28 +181,11 @@ agent:
   connectTimeout: 100
   runAsUser: 1000
 
-# Persistence configuration
 persistence:
   enabled: true
   storageClass: local-path
   size: 8Gi
 
-# Service configuration
 service:
   type: ClusterIP
   agentListenerPort: 50000
-
-# Jenkins plugins configuration
-installPlugins:
-  - kubernetes:4273.v4c21e0ae0a2e
-  - workflow-aggregator:600.vb_57cdd26fdd7
-  - git:5.4.1
-  - configuration-as-code:1810.v9b_c30a_249a_4c
-  - credentials-binding:677.vdc9d38cb_254d
-  - ssh-credentials:337.v395d2403ccd4
-  - credentials:1400.v7fd8f8b_c72d2
-  - plain-credentials:183.va_de8f1dd5a_2b_
-  - github-oauth:597.ve0c3480fcb_d0
-  - role-strategy:727.vd344b_eec783d
-  - blueocean:1.27.14
-  - docker-workflow:580.vc0c340686b_54
