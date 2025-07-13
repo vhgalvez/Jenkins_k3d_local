@@ -1,4 +1,4 @@
-# jenkins-values.yaml
+# jenkins-values.yaml (FIXED)
 controller:
   image:
     repository: jenkins/jenkins
@@ -48,14 +48,14 @@ controller:
     - credentials-binding
     - ssh-credentials
     - credentials
-    - plain-credentials # Asegúrate de que este plugin esté listado
+    - plain-credentials
     - active-directory
     - github-oauth
     - role-strategy
     - jwt-auth
     - authentication-tokens
     - url-auth-sso
-    - configuration-as-code-support # Agregado este plugin para asegurar la carga correcta de la configuración de JCasC
+    - configuration-as-code-support
 
   resources:
     requests:
@@ -78,7 +78,7 @@ controller:
               enableCaptcha: false
               users:
                 - id: "${JENKINS_ADMIN_USER}"
-                  password: "${JENKINS_ADMIN_PASSWORD_HASH}"  # Usamos directamente el hash con el prefijo #jbcrypt: 
+                  password: "${JENKINS_ADMIN_PASSWORD_HASH}"  # This should contain the full hash with #jbcrypt: prefix
           authorizationStrategy:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
@@ -110,7 +110,7 @@ controller:
 
         unclassified:
           casc:
-            initializationTimeout: 600  # Timeout aumentado a 10 minutos
+            initializationTimeout: 600
 
         credentials:
           system:
@@ -123,7 +123,7 @@ controller:
                       description: "DockerHub Access Token for CI/CD"
                   - usernamePassword:
                       id: "github-ci-token"
-                      username: "dummy"  # Usando un username dummy para el token de GitHub
+                      username: "dummy"
                       password: "${GITHUB_TOKEN}"
                       description: "GitHub Token for Push from Jenkins"
 
