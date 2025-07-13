@@ -307,7 +307,9 @@ Asigna un ID como: github-ci-token
 
 
 
+generación del hash bcrypt ahora usa el prefijo #jbcrypt: y asegura que el hash tenga el formato correcto ($2a$).
 
+hash bcrypt. Jenkins solo acepta hashes con el prefijo $2a$ para las contraseñas generadas con bcrypt. El hash que estás utilizando comienza con $2b$, lo que causa el error en Jenkins.
 
 
 ## 📜 Licencia
