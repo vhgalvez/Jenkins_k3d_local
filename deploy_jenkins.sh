@@ -1,28 +1,40 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# 0. Verificar existencia del archivo .env
+# --- Validar herramientas necesarias ---
+for cmd in kubectl helm python3; do
+  if ! command -v "$cmd" &>/dev/null; then
+    echo "❌ Error: '$cmd' no está instalado o no está en el PATH."
+    exit 1
+  fi
+done
+
+# --- Asegurar PATH útil si se ejecuta con sudo ---
+export PATH="$PATH:/usr/local/bin:/usr/bin:/snap/bin"
+
+# --- Verificar archivo .env ---
 if [[ ! -f .env ]]; then
     echo "❌ Archivo .env no encontrado. Crea uno con tus credenciales."
     exit 1
 fi
 
-# Cargar variables del entorno
+# --- Cargar variables del entorno ---
 set -a
 source .env
 set +a
 
-# Verificar que las variables básicas estén correctamente cargadas
-if [[ -z "${JENKINS_ADMIN_USER:-}" || -z "${JENKINS_ADMIN_PASSWORD:-}" || -z "${DOCKERHUB_USERNAME:-}" || -z "${DOCKERHUB_TOKEN:-}" || -z "${GITHUB_TOKEN:-}" ]]; then
-    echo "❌ Las variables de entorno necesarias no están definidas en el archivo .env."
-    echo "Variables requeridas: JENKINS_ADMIN_USER, JENKINS_ADMIN_PASSWORD, DOCKERHUB_USERNAME, DOCKERHUB_TOKEN, GITHUB_TOKEN"
-    exit 1
-fi
+# --- Validar variables críticas ---
+required_vars=(JENKINS_ADMIN_USER JENKINS_ADMIN_PASSWORD DOCKERHUB_USERNAME DOCKERHUB_TOKEN GITHUB_TOKEN)
+for var in "${required_vars[@]}"; do
+    if [[ -z "${!var:-}" ]]; then
+        echo "❌ La variable '$var' no está definida en .env"
+        exit 1
+    fi
+done
 
-# Generar hash bcrypt con $2a$ si no existe
+# --- Generar hash bcrypt si no está presente ---
 if [[ -z "${JENKINS_ADMIN_PASSWORD_HASH:-}" ]]; then
-    echo "🔑 Generando el hash para la contraseña..."
-
+    echo "🔑 Generando hash bcrypt..."
     JENKINS_ADMIN_PASSWORD_HASH=$(python3 - <<EOF
 import bcrypt, os
 password = os.environ['JENKINS_ADMIN_PASSWORD'].encode()
@@ -30,45 +42,38 @@ hashed = bcrypt.hashpw(password, bcrypt.gensalt(prefix=b'2a'))
 print("#jbcrypt:" + hashed.decode())
 EOF
 )
-
-    # Validar formato
     if [[ ! "$JENKINS_ADMIN_PASSWORD_HASH" =~ ^#jbcrypt:\$2a\$.* ]]; then
-        echo "❌ Error: Hash inválido. No cumple con formato #jbcrypt:\$2a\$"
+        echo "❌ Error: Hash inválido. Debe empezar con '#jbcrypt:\$2a\$'"
         exit 1
     fi
 
-    echo "✅ Hash generado correctamente."
-    echo "🔒 Hash: $JENKINS_ADMIN_PASSWORD_HASH"
-
-    # Actualizar .env
-    if grep -q "JENKINS_ADMIN_PASSWORD_HASH=" .env; then
-        sed -i "s|^JENKINS_ADMIN_PASSWORD_HASH=.*|JENKINS_ADMIN_PASSWORD_HASH=${JENKINS_ADMIN_PASSWORD_HASH}|" .env
+    echo "✅ Hash generado: $JENKINS_ADMIN_PASSWORD_HASH"
+    # Actualizar o agregar en .env
+    if grep -q "^JENKINS_ADMIN_PASSWORD_HASH=" .env; then
+        sed -i.bak "s|^JENKINS_ADMIN_PASSWORD_HASH=.*|JENKINS_ADMIN_PASSWORD_HASH=${JENKINS_ADMIN_PASSWORD_HASH}|" .env
     else
         echo "JENKINS_ADMIN_PASSWORD_HASH=${JENKINS_ADMIN_PASSWORD_HASH}" >> .env
     fi
 else
     echo "✅ Hash ya presente en .env"
-    echo "🔒 Hash existente: $JENKINS_ADMIN_PASSWORD_HASH"
-    
+    echo "🔒 $JENKINS_ADMIN_PASSWORD_HASH"
     if [[ ! "$JENKINS_ADMIN_PASSWORD_HASH" =~ ^#jbcrypt:\$2a\$.* ]]; then
-        echo "❌ Error: Hash inválido en .env. Debe tener prefijo #jbcrypt:\$2a\$"
+        echo "❌ Error: Hash inválido en .env"
         exit 1
     fi
 fi
 
+# --- Variables de despliegue ---
 NAMESPACE="jenkins"
 RELEASE="jenkins-local-k3d"
 CHART="jenkins/jenkins"
 
-# --- Eliminar secretos anteriores ---
+# --- Funciones ---
 delete_secrets() {
     echo "🗑️ Eliminando secretos anteriores..."
-    kubectl delete secret jenkins-admin -n "$NAMESPACE" 2>/dev/null || true
-    kubectl delete secret dockerhub-credentials -n "$NAMESPACE" 2>/dev/null || true
-    kubectl delete secret github-ci-token -n "$NAMESPACE" 2>/dev/null || true
+    kubectl delete secret jenkins-admin dockerhub-credentials github-ci-token -n "$NAMESPACE" --ignore-not-found
 }
 
-# --- Crear secretos necesarios ---
 create_secrets() {
     echo "🔐 Creando secretos..."
     kubectl create secret generic jenkins-admin \
@@ -85,37 +90,31 @@ create_secrets() {
         --from-literal=token="$GITHUB_TOKEN" \
         -n "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 
-    echo "✅ Secretos creados."
+    echo "✅ Secretos cargados correctamente."
 }
 
-# --- Eliminar Jenkins si ya está ---
-echo "🔍 Verificando despliegue previo..."
+# --- Eliminar despliegue previo ---
+echo "🔍 Verificando despliegue existente..."
 if helm status "$RELEASE" -n "$NAMESPACE" &>/dev/null; then
-    echo "🗑️ Desinstalando Jenkins existente..."
-    helm uninstall "$RELEASE" -n "$NAMESPACE" || true
-
-    echo "🧼 Eliminando recursos anteriores..."
-    kubectl delete pvc -l app.kubernetes.io/instance="$RELEASE" -n "$NAMESPACE" --ignore-not-found
-    kubectl delete all -l app.kubernetes.io/instance="$RELEASE" -n "$NAMESPACE" --ignore-not-found
+    echo "🗑️ Eliminando Jenkins anterior..."
+    helm uninstall "$RELEASE" -n "$NAMESPACE"
+    echo "🧼 Limpiando recursos previos..."
+    kubectl delete pvc,all -l app.kubernetes.io/instance="$RELEASE" -n "$NAMESPACE" --ignore-not-found
     sleep 10
 fi
 
-# --- Crear namespace ---
-echo "🚀 Creando namespace $NAMESPACE..."
+# --- Crear namespace si no existe ---
+echo "🚀 Creando namespace '$NAMESPACE'..."
 kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 
-# --- Cargar secretos ---
+# --- Crear secretos ---
 delete_secrets
 create_secrets
 
-# --- Añadir repositorio Jenkins ---
-if ! helm repo list | grep -q "^jenkins"; then
-    helm repo add jenkins https://charts.jenkins.io
-fi
+# --- Instalar Jenkins via Helm ---
+echo "📦 Instalando Jenkins vía Helm..."
+helm repo add jenkins https://charts.jenkins.io 2>/dev/null || true
 helm repo update
-
-# --- Instalar Jenkins ---
-echo "📦 Instalando Jenkins..."
 helm upgrade --install "$RELEASE" "$CHART" \
     -n "$NAMESPACE" \
     --create-namespace \
@@ -128,7 +127,7 @@ timeout=600
 elapsed=0
 while [[ $elapsed -lt $timeout ]]; do
     if kubectl rollout status statefulset/"$RELEASE" -n "$NAMESPACE" --timeout=30s; then
-        echo "✅ Jenkins listo."
+        echo "✅ Jenkins está listo."
         break
     fi
     echo "⏳ Esperando... ($elapsed/$timeout)"
@@ -143,23 +142,19 @@ if [[ $elapsed -ge $timeout ]]; then
     exit 1
 fi
 
-# --- Mostrar información de acceso ---
-echo "✅ Jenkins desplegado correctamente."
-kubectl get pods -n "$NAMESPACE"
-
+# --- Mostrar info de acceso ---
 cat <<EOF
 
-🌐 Accede a Jenkins:
-  → http://localhost:8080
+🎉 Jenkins desplegado correctamente
 
-👤 Usuario:     $JENKINS_ADMIN_USER
-🔒 Contraseña:  $JENKINS_ADMIN_PASSWORD
-🧾 Hash usado:  $JENKINS_ADMIN_PASSWORD_HASH
+🌐 URL:       http://localhost:8080
+👤 Usuario:   $JENKINS_ADMIN_USER
+🔒 Contraseña: $JENKINS_ADMIN_PASSWORD
+🧾 Hash:      $JENKINS_ADMIN_PASSWORD_HASH
 
-(Usa Ctrl+C para detener el port-forward si lo inicias manualmente)
+(Usa Ctrl+C para detener el port-forward si lo dejas abierto)
 
 EOF
 
 echo "🔗 Iniciando port-forward..."
-
 kubectl port-forward -n "$NAMESPACE" svc/"$RELEASE" 8080:8080
