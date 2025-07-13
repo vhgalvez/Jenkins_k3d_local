@@ -12,41 +12,51 @@ set -a
 source .env
 set +a
 
-# Verificar que las variables estén correctamente cargadas
+# Verificar que las variables básicas estén correctamente cargadas
 if [[ -z "${JENKINS_ADMIN_USER:-}" || -z "${JENKINS_ADMIN_PASSWORD:-}" || -z "${DOCKERHUB_USERNAME:-}" || -z "${DOCKERHUB_TOKEN:-}" || -z "${GITHUB_TOKEN:-}" ]]; then
     echo "❌ Las variables de entorno necesarias no están definidas en el archivo .env."
+    echo "Variables requeridas: JENKINS_ADMIN_USER, JENKINS_ADMIN_PASSWORD, DOCKERHUB_USERNAME, DOCKERHUB_TOKEN, GITHUB_TOKEN"
     exit 1
 fi
 
-# Verificar si el hash de la contraseña está presente
+# Verificar si el hash de la contraseña está presente, si no, generarlo
 if [[ -z "${JENKINS_ADMIN_PASSWORD_HASH:-}" ]]; then
     echo "🔑 Generando el hash para la contraseña..."
     
-    # Generar el hash bcrypt sin el prefijo "#jbcrypt:" (se agrega solo en el archivo JCasC)
-    JENKINS_ADMIN_PASSWORD_HASH=$(python3 -c "import bcrypt; password = '${JENKINS_ADMIN_PASSWORD}'; hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt(12)).decode('utf-8'); print(hash)")
+    # Generar el hash bcrypt SIN el prefijo "#jbcrypt:" (lo agregamos después)
+    RAW_HASH=$(python3 -c "import bcrypt; password = '${JENKINS_ADMIN_PASSWORD}'; hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt(12)).decode('utf-8'); print(hash)")
     
-    # Asegurarse de que el hash tenga el formato correcto (aceptando tanto $2a$ como $2b$)
-    if [[ -z "$JENKINS_ADMIN_PASSWORD_HASH" || ! "$JENKINS_ADMIN_PASSWORD_HASH" =~ ^\$2b\$.+ && ! "$JENKINS_ADMIN_PASSWORD_HASH" =~ ^\$2a\$.+ ]]; then
+    # Asegurarse de que el hash tenga el formato correcto
+    if [[ -z "$RAW_HASH" || ! "$RAW_HASH" =~ ^\$2b\$.+ && ! "$RAW_HASH" =~ ^\$2a\$.+ ]]; then
         echo "❌ Error: El hash de la contraseña no se generó correctamente o no tiene el formato esperado."
         exit 1
     fi
     
+    # Añadir el prefijo #jbcrypt: al hash generado
+    JENKINS_ADMIN_PASSWORD_HASH="#jbcrypt:${RAW_HASH}"
+    
     echo "✅ Hash de la contraseña generado correctamente."
-fi
-
-# Añadir el prefijo #jbcrypt: al hash generado
-JENKINS_ADMIN_PASSWORD_HASH="#jbcrypt:${JENKINS_ADMIN_PASSWORD_HASH}"
-
-# Verificar y mostrar el valor del hash
-echo "🔒 Hash de la contraseña: $JENKINS_ADMIN_PASSWORD_HASH"
-
-# Actualizar el hash en el archivo .env sin eliminar otros datos
-echo "JENKINS_ADMIN_PASSWORD_HASH=${JENKINS_ADMIN_PASSWORD_HASH}" >> .env
-
-# Asegurarse de que la variable de hash esté correctamente seteada
-if [[ -z "$JENKINS_ADMIN_PASSWORD_HASH" ]]; then
-    echo "❌ No se pudo generar el hash de la contraseña. Asegúrate de que Python esté instalado correctamente."
-    exit 1
+    echo "🔒 Hash generado: $JENKINS_ADMIN_PASSWORD_HASH"
+    
+    # Actualizar el archivo .env con el hash generado (evitar duplicados)
+    if grep -q "JENKINS_ADMIN_PASSWORD_HASH=" .env; then
+        # Si ya existe, reemplázalo
+        sed -i.bak "s|JENKINS_ADMIN_PASSWORD_HASH=.*|JENKINS_ADMIN_PASSWORD_HASH=${JENKINS_ADMIN_PASSWORD_HASH}|" .env
+    else
+        # Si no existe, agrégalo
+        echo "JENKINS_ADMIN_PASSWORD_HASH=${JENKINS_ADMIN_PASSWORD_HASH}" >> .env
+    fi
+else
+    echo "✅ Hash de contraseña ya existe en .env"
+    echo "🔒 Hash existente: $JENKINS_ADMIN_PASSWORD_HASH"
+    
+    # Verificar que el hash tenga el formato correcto
+    if [[ ! "$JENKINS_ADMIN_PASSWORD_HASH" =~ ^#jbcrypt:\$2[ab]\$.+ ]]; then
+        echo "❌ Error: El hash de la contraseña no tiene el formato correcto."
+        echo "Formato esperado: #jbcrypt:\$2b\$12\$..."
+        echo "Formato actual: $JENKINS_ADMIN_PASSWORD_HASH"
+        exit 1
+    fi
 fi
 
 NAMESPACE="jenkins"
@@ -56,16 +66,16 @@ CHART="jenkins/jenkins"
 # --- Función para eliminar secretos de Jenkins ---
 delete_secrets() {
     echo "🗑️ Eliminando secretos de Jenkins existentes..."
-    kubectl delete secret jenkins-admin -n "$NAMESPACE" || echo "🔴 No se encontró el secreto 'jenkins-admin'"
-    kubectl delete secret dockerhub-credentials -n "$NAMESPACE" || echo "🔴 No se encontró el secreto 'dockerhub-credentials'"
-    kubectl delete secret github-ci-token -n "$NAMESPACE" || echo "🔴 No se encontró el secreto 'github-ci-token'"
+    kubectl delete secret jenkins-admin -n "$NAMESPACE" 2>/dev/null || echo "🔴 No se encontró el secreto 'jenkins-admin'"
+    kubectl delete secret dockerhub-credentials -n "$NAMESPACE" 2>/dev/null || echo "🔴 No se encontró el secreto 'dockerhub-credentials'"
+    kubectl delete secret github-ci-token -n "$NAMESPACE" 2>/dev/null || echo "🔴 No se encontró el secreto 'github-ci-token'"
 }
 
 # --- Función para crear secrets en Kubernetes ---
 create_secrets() {
     echo "🔑 (Re)Creando secretos necesarios en el namespace '$NAMESPACE'..."
     
-    # Crear el secreto jenkins-admin con el usuario y la contraseña hash en Kubernetes
+    # Crear el secreto jenkins-admin con el usuario y la contraseña hash
     kubectl create secret generic jenkins-admin \
     --from-literal=jenkins-admin-user="$JENKINS_ADMIN_USER" \
     --from-literal=jenkins-admin-password="$JENKINS_ADMIN_PASSWORD_HASH" \
@@ -81,6 +91,8 @@ create_secrets() {
     kubectl create secret generic github-ci-token \
     --from-literal=token="$GITHUB_TOKEN" \
     -n "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+    
+    echo "✅ Secretos creados exitosamente"
 }
 
 # 1. Eliminar Jenkins si ya está desplegado
@@ -95,33 +107,26 @@ if helm status "$RELEASE" -n "$NAMESPACE" &>/dev/null; then
     echo "🧼 Eliminando recursos asociados..."
     kubectl delete all -l app.kubernetes.io/instance="$RELEASE" -n "$NAMESPACE" --ignore-not-found
     
-    echo "⏳ Eliminando namespace '$NAMESPACE'..."
-    kubectl delete namespace "$NAMESPACE" --ignore-not-found
-    
-    echo "⏳ Esperando a que el namespace se elimine completamente..."
-    while kubectl get namespace "$NAMESPACE" &>/dev/null; do
-        sleep 2
-    done
+    echo "⏳ Esperando a que los recursos se eliminen..."
+    sleep 10
 fi
 
-# 2. Eliminar secretos de Jenkins
-delete_secrets
-
-# 3. Crear namespace
+# 2. Crear o recrear namespace
 echo "🚀 Creando namespace '$NAMESPACE'..."
 kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 
-# 4. Crear Secrets
+# 3. Eliminar y recrear secretos
+delete_secrets
 create_secrets
 
-# 5. Añadir repositorio Helm de Jenkins si no está
+# 4. Añadir repositorio Helm de Jenkins si no está
 if ! helm repo list | grep -qE '^jenkins\s'; then
     echo "➕ Añadiendo repositorio Helm de Jenkins..."
     helm repo add jenkins https://charts.jenkins.io
 fi
 helm repo update
 
-# 6. Instalar Jenkins con Helm
+# 5. Instalar Jenkins con Helm
 echo "📦 Instalando Jenkins con Helm..."
 helm upgrade --install "$RELEASE" "$CHART" \
 -n "$NAMESPACE" \
@@ -129,27 +134,34 @@ helm upgrade --install "$RELEASE" "$CHART" \
 -f jenkins-values.yaml \
 --timeout 10m
 
-# 7. Esperar que Jenkins esté listo
+# 6. Esperar que Jenkins esté listo
 echo "⏳ Esperando a que Jenkins esté listo..."
-timeout=300
+timeout=600
 elapsed=0
 while [[ $elapsed -lt $timeout ]]; do
-    kubectl rollout status statefulset/"$RELEASE" -n "$NAMESPACE" --timeout=30s && break
+    if kubectl rollout status statefulset/"$RELEASE" -n "$NAMESPACE" --timeout=30s 2>/dev/null; then
+        echo "✅ Jenkins está listo!"
+        break
+    fi
     echo "⏳ Jenkins aún no está listo. Intentando de nuevo... ($elapsed/$timeout segundos)"
     sleep 30
     elapsed=$((elapsed + 30))
 done
 
 if [[ $elapsed -ge $timeout ]]; then
-    echo "⚠️ Error en el despliegue. Logs:"
+    echo "⚠️ Timeout esperando que Jenkins esté listo. Verificando estado..."
     kubectl get pods -n "$NAMESPACE"
-    kubectl logs -n "$NAMESPACE" pod/"$RELEASE"-0 -c jenkins || true
+    echo "📋 Logs de Jenkins:"
+    kubectl logs -n "$NAMESPACE" "$RELEASE"-0 -c jenkins --tail=50 || true
     exit 1
 fi
 
-# 8. Mostrar acceso
+# 7. Mostrar acceso
 echo "✅ Jenkins desplegado correctamente. Pods:"
 kubectl get pods -n "$NAMESPACE"
+
+# Extraer solo la contraseña sin el prefijo para mostrar al usuario
+DISPLAY_PASSWORD=$(echo "$JENKINS_ADMIN_PASSWORD_HASH" | sed 's/^#jbcrypt://')
 
 cat <<EOF
 
@@ -157,10 +169,14 @@ cat <<EOF
     http://localhost:8080
 
 👤 Usuario:     $JENKINS_ADMIN_USER
-🔒 Contraseña:  $JENKINS_ADMIN_PASSWORD_HASH  # Usamos el hash de la contraseña
+🔒 Contraseña:  $JENKINS_ADMIN_PASSWORD
+
+📝 Nota: La contraseña se almacena como hash bcrypt en Kubernetes
+🔑 Hash completo: $JENKINS_ADMIN_PASSWORD_HASH
 
 (🔁 Ctrl+C para cerrar el port-forward)
 
 EOF
 
-kubectl port-forward -n "$NAMESPACE" svc/"$RELEASE" 8080:8080
+echo "🔗 Iniciando port-forward..."
+kubectl port-forward -n "$NAMESPACE" svc/"$RELEASE" 8080:8080 &
