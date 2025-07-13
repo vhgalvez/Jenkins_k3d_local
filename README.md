@@ -306,11 +306,32 @@ O mejor aún, usa tipo "Secret Text" si solo necesitas el token.
 Asigna un ID como: github-ci-token
 
 
+## 🔐 Generación de Hash Bcrypt Compatible con Jenkins
 
-generación del hash bcrypt ahora usa el prefijo #jbcrypt: y asegura que el hash tenga el formato correcto ($2a$).
+Jenkins **requiere** que los hashes bcrypt usen **exclusivamente** el prefijo `$2a$`. Otros como `$2b$`, `$2x$` o `$2y$` causarán errores en la configuración con JCasC:
 
-hash bcrypt. Jenkins solo acepta hashes con el prefijo $2a$ para las contraseñas generadas con bcrypt. El hash que estás utilizando comienza con $2b$, lo que causa el error en Jenkins.
+```
+IllegalArgumentException: The hashed password was hashed with the correct algorithm, but the format was not correct
+```
 
+### ✅ Buenas Prácticas:
+
+* El hash debe comenzar con: `#jbcrypt:$2a$`
+* Usar al menos 12 rondas de coste (`gensalt(12)`)
+* Evitar prefijos como `$2b$`
+
+### 🛠 Ejemplo en Python:
+
+```python
+import bcrypt
+password = b"TuContraseña"
+hashed = bcrypt.hashpw(password, bcrypt.gensalt(prefix=b'2a'))
+print("#jbcrypt:" + hashed.decode())
+```
+
+Este hash es válido para Jenkins tanto en configuración manual como mediante Configuration as Code (JCasC).
+
+---
 
 ## 📜 Licencia
 
