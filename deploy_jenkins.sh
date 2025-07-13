@@ -34,6 +34,9 @@ if [[ -z "${JENKINS_ADMIN_PASSWORD_HASH:-}" ]]; then
     echo "✅ Hash de la contraseña generado correctamente."
 fi
 
+# Añadir el prefijo #jbcrypt: al hash generado
+JENKINS_ADMIN_PASSWORD_HASH="#jbcrypt:${JENKINS_ADMIN_PASSWORD_HASH}"
+
 # Verificar y mostrar el valor del hash
 echo "🔒 Hash de la contraseña: $JENKINS_ADMIN_PASSWORD_HASH"
 
