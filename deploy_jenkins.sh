@@ -22,19 +22,19 @@ fi
 # Verificar si el hash de la contraseña está presente, si no, generarlo
 if [[ -z "${JENKINS_ADMIN_PASSWORD_HASH:-}" ]]; then
     echo "🔑 Generando el hash para la contraseña..."
-    
+
     # Generar el hash bcrypt SIN el prefijo "#jbcrypt:" (JCasC lo agrega automáticamente)
     JENKINS_ADMIN_PASSWORD_HASH=$(python3 -c "import bcrypt; password = '${JENKINS_ADMIN_PASSWORD}'; hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt(12)).decode('utf-8'); print(hash)")
-    
+
     # Asegurarse de que el hash tenga el formato correcto
     if [[ -z "$JENKINS_ADMIN_PASSWORD_HASH" || ! "$JENKINS_ADMIN_PASSWORD_HASH" =~ ^\$2b\$.+ && ! "$JENKINS_ADMIN_PASSWORD_HASH" =~ ^\$2a\$.+ ]]; then
         echo "❌ Error: El hash de la contraseña no se generó correctamente o no tiene el formato esperado."
         exit 1
     fi
-    
+
     echo "✅ Hash de la contraseña generado correctamente."
     echo "🔒 Hash generado: $JENKINS_ADMIN_PASSWORD_HASH"
-    
+
     # Actualizar el archivo .env con el hash generado (evitar duplicados)
     if grep -q "JENKINS_ADMIN_PASSWORD_HASH=" .env; then
         # Si ya existe, reemplázalo
@@ -47,19 +47,19 @@ if [[ -z "${JENKINS_ADMIN_PASSWORD_HASH:-}" ]]; then
 else
     echo "✅ Hash de contraseña ya existe en .env"
     echo "🔒 Hash existente: $JENKINS_ADMIN_PASSWORD_HASH"
-    
+
     # Verificar que el hash tenga el formato correcto (sin prefijo #jbcrypt:)
     if [[ ! "$JENKINS_ADMIN_PASSWORD_HASH" =~ ^\$2[ab]\$.+ ]]; then
         echo "❌ Error: El hash de la contraseña no tiene el formato correcto."
         echo "Formato esperado: \$2b\$12\$..."
         echo "Formato actual: $JENKINS_ADMIN_PASSWORD_HASH"
-        
+
         # Si tiene el prefijo #jbcrypt:, removerlo
         if [[ "$JENKINS_ADMIN_PASSWORD_HASH" =~ ^#jbcrypt: ]]; then
             echo "🔧 Removiendo prefijo #jbcrypt: del hash..."
             JENKINS_ADMIN_PASSWORD_HASH="${JENKINS_ADMIN_PASSWORD_HASH#'#jbcrypt:'}"
             echo "🔒 Hash corregido: $JENKINS_ADMIN_PASSWORD_HASH"
-            
+
             # Actualizar el archivo .env
             sed -i "s|JENKINS_ADMIN_PASSWORD_HASH=.*|JENKINS_ADMIN_PASSWORD_HASH=${JENKINS_ADMIN_PASSWORD_HASH}|" .env
         else
@@ -83,24 +83,24 @@ delete_secrets() {
 # --- Función para crear secrets en Kubernetes ---
 create_secrets() {
     echo "🔑 (Re)Creando secretos necesarios en el namespace '$NAMESPACE'..."
-    
+
     # Crear el secreto jenkins-admin con el usuario y la contraseña hash (SIN prefijo #jbcrypt:)
     kubectl create secret generic jenkins-admin \
     --from-literal=jenkins-admin-user="$JENKINS_ADMIN_USER" \
     --from-literal=jenkins-admin-password="$JENKINS_ADMIN_PASSWORD_HASH" \
     -n "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
-    
+
     # Crear el secreto dockerhub-credentials
     kubectl create secret generic dockerhub-credentials \
     --from-literal=username="$DOCKERHUB_USERNAME" \
     --from-literal=password="$DOCKERHUB_TOKEN" \
     -n "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
-    
+
     # Crear el secreto github-ci-token
     kubectl create secret generic github-ci-token \
     --from-literal=token="$GITHUB_TOKEN" \
     -n "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
-    
+
     echo "✅ Secretos creados exitosamente"
 }
 
@@ -109,13 +109,13 @@ echo "🔍 Verificando si Jenkins ya está desplegado..."
 if helm status "$RELEASE" -n "$NAMESPACE" &>/dev/null; then
     echo "🗑️  Desinstalando Jenkins existente..."
     helm uninstall "$RELEASE" -n "$NAMESPACE" || true
-    
+
     echo "🧹 Eliminando PVCs asociados..."
     kubectl delete pvc -l app.kubernetes.io/instance="$RELEASE" -n "$NAMESPACE" --ignore-not-found
-    
+
     echo "🧼 Eliminando recursos asociados..."
     kubectl delete all -l app.kubernetes.io/instance="$RELEASE" -n "$NAMESPACE" --ignore-not-found
-    
+
     echo "⏳ Esperando a que los recursos se eliminen..."
     sleep 10
 fi
