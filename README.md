@@ -331,7 +331,17 @@ print("#jbcrypt:" + hashed.decode())
 
 Este hash es válido para Jenkins tanto en configuración manual como mediante Configuration as Code (JCasC).
 
+
+
 ---
+
+## 🗝️ Cómo ver los secretos de Jenkins
+Para ver los secretos creados en el namespace de Jenkins, puedes usar:
+
+```bash
+kubectl get secrets -n jenkins
+```
+
 
 ## 📜 Licencia
 
