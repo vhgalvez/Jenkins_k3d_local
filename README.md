@@ -349,6 +349,11 @@ kubectl get secrets -n jenkins
 ```
 kubectl get pods -n jenkins -w
 
+kubectl delete jobs --all -n jenkins
+
+kubectl delete pods --all -n jenkins
+
+
 ## 📜 Licencia
 
 MIT © [https://github.com/vhgalvez](https://github.com/vhgalvez)

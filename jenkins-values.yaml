@@ -1,4 +1,5 @@
 # jenkins-values.yaml
+# jenkins-values.yaml
 controller:
   image:
     repository: jenkins/jenkins
@@ -58,7 +59,7 @@ controller:
                 templates:
                   - name: "default"
                     label: "jenkins-agent"
-                    nodeUsageMode: "NORMAL"
+                    nodeUsageMode: NORMAL
                     idleMinutes: 1
                     containers:
                       - name: jnlp
@@ -69,6 +70,14 @@ controller:
                         resourceRequestMemory: "128Mi"
                         resourceLimitCpu: "500m"
                         resourceLimitMemory: "512Mi"
+                      - name: nodejs
+                        image: "node:18"
+                        command: ["cat"]
+                        ttyEnabled: true
+                      - name: kaniko
+                        image: "gcr.io/kaniko-project/executor:latest"
+                        args: ["--help"]
+                        ttyEnabled: true
 
         unclassified:
           location:
@@ -157,10 +166,18 @@ agent:
   nodeUsageMode: NORMAL
   containers:
     - name: jnlp
-      image: "jenkins/inbound-agent"
+      image: "jenkins/inbound-agent:3107.v665000b_51092-10"
       ttyEnabled: true
-  connectTimeout: 100
+    - name: nodejs
+      image: "node:18"
+      command: ["cat"]
+      ttyEnabled: true
+    - name: kaniko
+      image: "gcr.io/kaniko-project/executor:latest"
+      args: ["--help"]
+      ttyEnabled: true
   runAsUser: 1000
+  connectTimeout: 100
 
 persistence:
   enabled: true
