@@ -159,6 +159,14 @@ agent:
     - name: jnlp
       image: "jenkins/inbound-agent"
       ttyEnabled: true
+    - name: nodejs
+      image: "node:18"
+      command: ["cat"]
+      ttyEnabled: true
+    - name: kaniko
+      image: "gcr.io/kaniko-project/executor:latest"
+      args: ["--help"]
+      ttyEnabled: true
   connectTimeout: 100
   runAsUser: 1000
 
