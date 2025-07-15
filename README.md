@@ -335,6 +335,19 @@ Para ver los secretos creados en el namespace de Jenkins, puedes usar:
 kubectl get secrets -n jenkins
 ```
 
+permisos:
+
+```bash
+sudo chown $USER:$USER .env && chmod 600 .env
+```
+
+
+Verifica los secretos creados:
+
+```bash
+kubectl get secrets -n jenkins
+```
+
 
 ## 📜 Licencia
 
