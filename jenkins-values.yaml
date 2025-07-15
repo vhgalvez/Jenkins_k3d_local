@@ -2,31 +2,26 @@
 controller:
   image:
     repository: jenkins/jenkins
-    tag: "2.518-jdk21"
-    pullPolicy: IfNotPresent
+    tag: "2.518‑jdk21"
 
+  # ─── Credenciales de admin ─────────────────────────────
   admin:
     existingSecret: jenkins-admin
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
+  # ─── Variables de entorno desde secretos ───────────────
   containerEnv:
     - name: DOCKERHUB_USERNAME
       valueFrom:
-        secretKeyRef:
-          name: dockerhub-credentials
-          key: username
+        { secretKeyRef: { name: dockerhub-credentials, key: username } }
     - name: DOCKERHUB_TOKEN
       valueFrom:
-        secretKeyRef:
-          name: dockerhub-credentials
-          key: password
+        { secretKeyRef: { name: dockerhub-credentials, key: password } }
     - name: GITHUB_TOKEN
-      valueFrom:
-        secretKeyRef:
-          name: github-ci-token
-          key: token
+      valueFrom: { secretKeyRef: { name: github-ci-token, key: token } }
 
+  # ─── JCasC ──────────────────────────────────────────────
   JCasC:
     enabled: true
     defaultConfig: false
@@ -44,115 +39,71 @@ controller:
           authorizationStrategy:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
+
           clouds:
             - kubernetes:
-                name: "kubernetes"
-                serverUrl: "https://kubernetes.default"
+                name: kubernetes
+                serverUrl: https://kubernetes.default
                 skipTlsVerify: true
-                namespace: "jenkins"
-                jenkinsUrl: "http://jenkins-jenkins:8080"
-                jenkinsTunnel: "jenkins-jenkins-agent:50000"
+                namespace: jenkins
+                jenkinsUrl: http://jenkins-jenkins:8080
+                jenkinsTunnel: jenkins-jenkins-agent:50000
                 containerCap: 10
-                connectTimeout: 5
-                readTimeout: 15
                 templates:
-                  - name: "default"
-                    label: "jenkins-agent"
+                  - name: default
+                    label: jenkins-agent
                     nodeUsageMode: NORMAL
                     idleMinutes: 1
                     containers:
                       - name: jnlp
-                        image: "jenkins/inbound-agent:3107.v665000b_51092-10"
-                        args:
-                          - --agent
-                          - jnlp
-                          - --workDir=/home/jenkins/agent
+                        image: jenkins/inbound-agent:3107.v665000b_51092-10
+                        # ⇣ SCALAR, no lista
+                        args: "--agent jnlp --workDir=/home/jenkins/agent"
                         ttyEnabled: true
-                        resourceRequestCpu: "100m"
-                        resourceRequestMemory: "128Mi"
-                        resourceLimitCpu: "500m"
-                        resourceLimitMemory: "512Mi"
+                        resourceRequestCpu: 100m
+                        resourceRequestMemory: 128Mi
+                        resourceLimitCpu: 500m
+                        resourceLimitMemory: 512Mi
                       - name: nodejs
-                        image: "node:18"
+                        image: node:18
                         command: ["cat"]
                         ttyEnabled: true
                       - name: kaniko
-                        image: "gcr.io/kaniko-project/executor:latest"
-                        args: ["--help"]
+                        image: gcr.io/kaniko-project/executor:latest
+                        args: "--help"
                         ttyEnabled: true
 
         unclassified:
           location:
-            adminAddress: "admin@jenkins.local"
-            url: "http://jenkins.local"
+            adminAddress: admin@jenkins.local
+            url: http://jenkins.local
 
         credentials:
           system:
             domainCredentials:
               - credentials:
                   - usernamePassword:
-                      id: "dockerhub-credentials"
+                      id: dockerhub-credentials
                       username: "${DOCKERHUB_USERNAME}"
                       password: "${DOCKERHUB_TOKEN}"
-                      description: "DockerHub Access Token for CI/CD"
+                      description: DockerHub Access Token
                   - usernamePassword:
-                      id: "github-ci-token"
-                      username: "dummy"
+                      id: github-ci-token
+                      username: dummy
                       password: "${GITHUB_TOKEN}"
-                      description: "GitHub Token for Push from Jenkins"
+                      description: GitHub PAT para GitOps
 
   sidecars:
     configAutoReload:
       enabled: true
 
-  securityContext:
-    runAsUser: 1000
-    runAsGroup: 1000
-    fsGroup: 1000
-
-  volumes:
-    - name: docker-storage
-      emptyDir: {}
-    - name: docker-bin
-      emptyDir: {}
-
-  volumeMounts:
-    - name: docker-bin
-      mountPath: /usr/local/bin
-
-  livenessProbe:
-    httpGet:
-      path: /login
-      port: 8080
-    initialDelaySeconds: 90
-    periodSeconds: 10
-    failureThreshold: 5
-    timeoutSeconds: 5
-
-  readinessProbe:
-    httpGet:
-      path: /login
-      port: 8080
-    initialDelaySeconds: 60
-    periodSeconds: 10
-    failureThreshold: 3
-    timeoutSeconds: 5
-
-  startupProbe:
-    httpGet:
-      path: /login
-      port: 8080
-    initialDelaySeconds: 120
-    periodSeconds: 10
-    failureThreshold: 18
-    timeoutSeconds: 5
-
   installPlugins:
     - kubernetes
     - workflow-aggregator
-    # - git
+    - git
     - docker-workflow
-    - blueocean
+    # comentado BlueOcean para evitar dependencia sse‑gateway
+    # - blueocean
     - configuration-as-code
     - credentials-binding
     - ssh-credentials
@@ -161,26 +112,23 @@ controller:
     - github-oauth
     - role-strategy
 
+# ─── Plantilla por defecto de agentes freestyle ──────────
 agent:
-  podName: "jenkins-agent"
-  customJenkinsLabels:
-    - jenkins-agent
+  podName: jenkins-agent
+  customJenkinsLabels: [jenkins-agent]
   nodeUsageMode: NORMAL
   containers:
     - name: jnlp
-      image: "jenkins/inbound-agent:3107.v665000b_51092-10"
-      args:
-        - --agent
-        - jnlp
-        - --workDir=/home/jenkins/agent
+      image: jenkins/inbound-agent:3107.v665000b_51092-10
+      args: "--agent jnlp --workDir=/home/jenkins/agent"
       ttyEnabled: true
     - name: nodejs
-      image: "node:18"
+      image: node:18
       command: ["cat"]
       ttyEnabled: true
     - name: kaniko
-      image: "gcr.io/kaniko-project/executor:latest"
-      args: ["--help"]
+      image: gcr.io/kaniko-project/executor:latest
+      args: "--help"
       ttyEnabled: true
   runAsUser: 1000
   connectTimeout: 100
@@ -189,7 +137,3 @@ persistence:
   enabled: true
   storageClass: local-path
   size: 8Gi
-
-service:
-  type: ClusterIP
-  agentListenerPort: 50000
