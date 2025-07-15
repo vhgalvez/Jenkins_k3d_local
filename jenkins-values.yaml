@@ -46,16 +46,16 @@ controller:
               allowAnonymousRead: false
           clouds:
             - kubernetes:
-                name: kubernetes
-                serverUrl: https://kubernetes.default
+                name: "kubernetes"
+                serverUrl: "https://kubernetes.default"
                 skipTlsVerify: true
-                namespace: jenkins
-                jenkinsUrl: http://jenkins-jenkins:8080
-                jenkinsTunnel: jenkins-jenkins-agent:50000
+                namespace: "jenkins"
+                jenkinsUrl: "http://jenkins-jenkins:8080"
+                jenkinsTunnel: "jenkins-jenkins-agent:50000"
                 containerCap: 10
                 templates:
-                  - name: default
-                    label: jenkins-agent
+                  - name: "default"
+                    label: "jenkins-agent"
                     nodeUsageMode: NORMAL
                     idleMinutes: 1
                     containers:
@@ -66,13 +66,14 @@ controller:
                           - jnlp
                           - --workDir=/home/jenkins/agent
                         ttyEnabled: true
-                        resourceRequestCpu: 100m
-                        resourceRequestMemory: 128Mi
-                        resourceLimitCpu: 500m
-                        resourceLimitMemory: 512Mi
+                        resourceRequestCpu: "100m"
+                        resourceRequestMemory: "128Mi"
+                        resourceLimitCpu: "500m"
+                        resourceLimitMemory: "512Mi"
                       - name: nodejs
                         image: node:18
-                        command: ["cat"]
+                        command:
+                          - cat
                         ttyEnabled: true
                       - name: kaniko
                         image: gcr.io/kaniko-project/executor:latest
@@ -82,23 +83,26 @@ controller:
 
         unclassified:
           location:
-            adminAddress: admin@jenkins.local
-            url: http://jenkins.local
+            adminAddress: "admin@jenkins.local"
+            url: "http://jenkins.local"
 
         credentials:
           system:
             domainCredentials:
-              - credentials:
+              - domain: "_"
+                credentials:
                   - usernamePassword:
-                      id: dockerhub-credentials
+                      scope: GLOBAL
+                      id: "dockerhub-credentials"
                       username: "${DOCKERHUB_USERNAME}"
                       password: "${DOCKERHUB_TOKEN}"
-                      description: DockerHub Access Token
+                      description: "DockerHub Access Token"
                   - usernamePassword:
-                      id: github-ci-token
-                      username: dummy
+                      scope: GLOBAL
+                      id: "github-ci-token"
+                      username: "dummy"
                       password: "${GITHUB_TOKEN}"
-                      description: GitHub PAT para GitOps
+                      description: "GitHub PAT para GitOps"
 
   sidecars:
     configAutoReload:
@@ -109,7 +113,7 @@ controller:
     - workflow-aggregator
     - git
     - docker-workflow
-    # - blueocean
+    # - blueocean  # ❌ Desactivado por incompatibilidad SSE
     - configuration-as-code
     - credentials-binding
     - ssh-credentials
@@ -133,7 +137,8 @@ agent:
       ttyEnabled: true
     - name: nodejs
       image: node:18
-      command: ["cat"]
+      command:
+        - cat
       ttyEnabled: true
     - name: kaniko
       image: gcr.io/kaniko-project/executor:latest
