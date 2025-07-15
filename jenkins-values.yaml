@@ -150,7 +150,7 @@ controller:
   installPlugins:
     - kubernetes
     - workflow-aggregator
-    - git
+    # - git
     - docker-workflow
     - blueocean
     - configuration-as-code
