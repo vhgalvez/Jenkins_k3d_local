@@ -89,8 +89,7 @@ controller:
         credentials:
           system:
             domainCredentials:
-              - domain: "_"
-                credentials:
+              - credentials:
                   - usernamePassword:
                       scope: GLOBAL
                       id: "dockerhub-credentials"
