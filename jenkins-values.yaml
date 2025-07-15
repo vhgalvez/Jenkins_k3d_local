@@ -5,13 +5,11 @@ controller:
     tag: "2.518-jdk21"
     pullPolicy: IfNotPresent
 
-  # ─── credenciales de admin ─────────────────────────────
   admin:
     existingSecret: jenkins-admin
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
-  # ─── variables de entorno leídas de secrets ────────────
   containerEnv:
     - name: DOCKERHUB_USERNAME
       valueFrom:
@@ -23,7 +21,7 @@ controller:
       valueFrom:
         secretKeyRef: { name: github-ci-token, key: token }
 
-  # ─── configuración JCasC ───────────────────────────────
+  # ─── Jenkins Configuration as Code ─────────────────────
   JCasC:
     enabled: true
     defaultConfig: false
@@ -80,7 +78,7 @@ controller:
             url: "http://jenkins.local"
             adminAddress: "admin@jenkins.local"
 
-        # ⚠️ bloque de credenciales CORREGIDO
+        # ── CREDENCIALES (forma mínima y correcta) ─────────
         credentials:
           system:
             domainCredentials:
@@ -90,18 +88,15 @@ controller:
                       id: "dockerhub-credentials"
                       username: "${DOCKERHUB_USERNAME}"
                       password: "${DOCKERHUB_TOKEN}"
-                      description: "DockerHub Access Token"
                   - string:
                       scope: GLOBAL
                       id: "github-ci-token"
                       secret: "${GITHUB_TOKEN}"
-                      description: "GitHub PAT para GitOps"
 
   sidecars:
     configAutoReload:
       enabled: true
 
-  # plugins imprescindibles
   installPlugins:
     - kubernetes
     - workflow-aggregator
@@ -114,9 +109,9 @@ controller:
     - ssh-credentials
     - role-strategy
     - github-oauth
-    # BlueOcean comentado: # - blueocean
+    # - blueocean   # ← Mantener comentado mientras no necesites el UI de BlueOcean
 
-# ─── plantilla base de agentes freestyle ────────────────
+# ─── Plantilla por defecto de los agentes ───────────────
 agent:
   podName: "jenkins-agent"
   customJenkinsLabels: ["jenkins-agent"]
@@ -137,7 +132,7 @@ agent:
   runAsUser: 1000
   connectTimeout: 100
 
-# ─── almacenamiento persistente ─────────────────────────
+# ─── Almacenamiento persistente ─────────────────────────
 persistence:
   enabled: true
   storageClass: local-path
