@@ -77,8 +77,9 @@ controller:
 
                       - name: kaniko
                         image: "gcr.io/kaniko-project/executor:latest"
-                        args: "--help"
+                        args: ""
                         ttyEnabled: true
+
 
         unclassified:
           location:
