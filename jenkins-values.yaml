@@ -91,6 +91,9 @@ controller:
                       description: "GitHub Token for Push from Jenkins"
 
   sidecars:
+    configAutoReload:
+      enabled: false
+
   installPlugins:
     - kubernetes
     - workflow-aggregator
