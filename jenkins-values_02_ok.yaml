@@ -44,42 +44,31 @@ controller:
           authorizationStrategy:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
-
           clouds:
             - kubernetes:
                 name: "kubernetes"
-                namespace: "jenkins"
                 serverUrl: "https://kubernetes.default"
                 skipTlsVerify: true
+                namespace: "jenkins"
                 jenkinsUrl: "http://jenkins-jenkins:8080"
                 jenkinsTunnel: "jenkins-jenkins-agent:50000"
                 containerCap: 10
                 connectTimeout: 5
                 readTimeout: 15
-
                 templates:
-                  - name: "jenkins-agent"
+                  - name: "default"
                     label: "jenkins-agent"
-                    nodeUsageMode: NORMAL
+                    nodeUsageMode: "NORMAL"
                     idleMinutes: 1
                     containers:
                       - name: jnlp
-                        image: jenkins/inbound-agent:3309.v27b_9314fd1a_4-1
-                        args: ['$(JENKINS_SECRET)', '$(JENKINS_NAME)']
+                        image: "jenkins/inbound-agent:3107.v665000b_51092-10"
+                        args: "${computer.jnlpmac} ${computer.name}"
                         ttyEnabled: true
                         resourceRequestCpu: "100m"
                         resourceRequestMemory: "128Mi"
-
-                      - name: nodejs
-                        image: node:18
-                        command: ['cat']
-                        ttyEnabled: true
-
-                      - name: kaniko
-                        image: gcr.io/kaniko-project/executor:latest
-                        command: ['/busybox/cat']
-                        args: ['sleep', 'infinity']
-                        ttyEnabled: true
+                        resourceLimitCpu: "500m"
+                        resourceLimitMemory: "512Mi"
 
         unclassified:
           location:
@@ -101,7 +90,6 @@ controller:
                       password: "${GITHUB_TOKEN}"
                       description: "GitHub Token for Push from Jenkins"
 
-  # ❗ Necesario para evitar errores de Helm si no usas configAutoReload
   sidecars:
     configAutoReload:
       enabled: false
