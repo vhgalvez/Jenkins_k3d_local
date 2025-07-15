@@ -5,11 +5,13 @@ controller:
     tag: "2.518-jdk21"
     pullPolicy: IfNotPresent
 
+  # Configuración del admin usando secreto existente
   admin:
     existingSecret: jenkins-admin
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
+  # Variables de entorno para Jenkins extraídas de secretos
   containerEnv:
     - name: DOCKERHUB_USERNAME
       valueFrom:
@@ -27,6 +29,7 @@ controller:
           name: github-ci-token
           key: token
 
+  # JCasC Configuration
   JCasC:
     enabled: true
     defaultConfig: false
@@ -55,17 +58,17 @@ controller:
                 templates:
                   - name: "default"
                     label: "jenkins-agent"
-                    nodeUsageMode: NORMAL
+                    nodeUsageMode: "NORMAL"
                     idleMinutes: 1
                     containers:
                       - name: jnlp
                         image: "jenkins/inbound-agent:3107.v665000b_51092-10"
                         args: "${computer.jnlpmac} ${computer.name}"
                         ttyEnabled: true
-                        resourceRequestCpu: 100m
-                        resourceRequestMemory: 128Mi
-                        resourceLimitCpu: 500m
-                        resourceLimitMemory: 512Mi
+                        resourceRequestCpu: "100m"
+                        resourceRequestMemory: "128Mi"
+                        resourceLimitCpu: "500m"
+                        resourceLimitMemory: "512Mi"
 
         unclassified:
           location:
@@ -87,25 +90,30 @@ controller:
                       password: "${GITHUB_TOKEN}"
                       description: "GitHub Token for Push from Jenkins"
 
+  # Sidecar container configuration
   sidecars:
     configAutoReload:
       enabled: true
 
+  # Security settings for Jenkins
   securityContext:
     runAsUser: 1000
     runAsGroup: 1000
     fsGroup: 1000
 
+  # Volumes configuration
   volumes:
     - name: docker-storage
       emptyDir: {}
     - name: docker-bin
       emptyDir: {}
 
+  # Volume mounts
   volumeMounts:
     - name: docker-bin
       mountPath: /usr/local/bin
 
+  # Liveness, readiness, and startup probes
   livenessProbe:
     httpGet:
       path: /login
@@ -133,6 +141,7 @@ controller:
     failureThreshold: 18
     timeoutSeconds: 5
 
+  # Jenkins plugins configuration - DEBE estar dentro de controller
   installPlugins:
     - kubernetes
     - workflow-aggregator
@@ -147,22 +156,26 @@ controller:
     - github-oauth
     - role-strategy
 
+# Jenkins agent configuration
 agent:
-  podName: jenkins-agent
-  customJenkinsLabels: [jenkins-agent]
+  podName: "jenkins-agent"
+  customJenkinsLabels:
+    - jenkins-agent
   nodeUsageMode: NORMAL
   containers:
     - name: jnlp
-      image: "jenkins/inbound-agent:3107.v665000b_51092-10"
+      image: "jenkins/inbound-agent"
       ttyEnabled: true
   connectTimeout: 100
   runAsUser: 1000
 
+# Persistence configuration
 persistence:
   enabled: true
   storageClass: local-path
   size: 8Gi
 
+# Service configuration
 service:
   type: ClusterIP
   agentListenerPort: 50000
