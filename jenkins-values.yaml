@@ -5,13 +5,11 @@ controller:
     tag: "2.518-jdk21"
     pullPolicy: IfNotPresent
 
-  # Configuración del admin usando secreto existente
   admin:
     existingSecret: jenkins-admin
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
-  # Variables de entorno para Jenkins extraídas de secretos
   containerEnv:
     - name: DOCKERHUB_USERNAME
       valueFrom:
@@ -29,7 +27,6 @@ controller:
           name: github-ci-token
           key: token
 
-  # JCasC Configuration
   JCasC:
     enabled: true
     defaultConfig: false
@@ -41,6 +38,9 @@ controller:
             local:
               allowsSignup: false
               enableCaptcha: false
+              users:
+                - id: "${JENKINS_ADMIN_USER}"
+                  password: "${JENKINS_ADMIN_PASSWORD_HASH}"
           authorizationStrategy:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
@@ -90,30 +90,25 @@ controller:
                       password: "${GITHUB_TOKEN}"
                       description: "GitHub Token for Push from Jenkins"
 
-  # Sidecar container configuration
   sidecars:
     configAutoReload:
       enabled: true
 
-  # Security settings for Jenkins
   securityContext:
     runAsUser: 1000
     runAsGroup: 1000
     fsGroup: 1000
 
-  # Volumes configuration
   volumes:
     - name: docker-storage
       emptyDir: {}
     - name: docker-bin
       emptyDir: {}
 
-  # Volume mounts
   volumeMounts:
     - name: docker-bin
       mountPath: /usr/local/bin
 
-  # Liveness, readiness, and startup probes
   livenessProbe:
     httpGet:
       path: /login
@@ -141,7 +136,6 @@ controller:
     failureThreshold: 18
     timeoutSeconds: 5
 
-  # Jenkins plugins configuration - DEBE estar dentro de controller
   installPlugins:
     - kubernetes
     - workflow-aggregator
@@ -156,7 +150,6 @@ controller:
     - github-oauth
     - role-strategy
 
-# Jenkins agent configuration
 agent:
   podName: "jenkins-agent"
   customJenkinsLabels:
@@ -169,13 +162,11 @@ agent:
   connectTimeout: 100
   runAsUser: 1000
 
-# Persistence configuration
 persistence:
   enabled: true
   storageClass: local-path
   size: 8Gi
 
-# Service configuration
 service:
   type: ClusterIP
   agentListenerPort: 50000
