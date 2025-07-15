@@ -130,13 +130,6 @@ kubectl exec -n jenkins svc/jenkins-local-k3d -c jenkins -- \
   cat /run/secrets/additional/chart-admin-password
 ```
 
-✅ Verifica que Docker funciona dentro de Jenkins
-
-Para confirmar que Docker está listo para usar dentro del contenedor Jenkins (gracias a DinD):
-
-```bash
-kubectl exec -it -n jenkins jenkins-local-k3d-0 -- docker version
-```
 
 ## 🗑 Cómo eliminar por completo tu Jenkins en k3d paso a paso
 
