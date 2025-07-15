@@ -10,6 +10,7 @@ controller:
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
+  # ───── Vars de entorno suministradas por Secrets ─────
   containerEnv:
     - name: DOCKERHUB_USERNAME
       valueFrom:
@@ -20,6 +21,7 @@ controller:
     - name: GITHUB_TOKEN
       valueFrom: { secretKeyRef: { name: github-ci-token, key: token } }
 
+  # ───── Configuration‑as‑Code ─────
   JCasC:
     enabled: true
     defaultConfig: false
@@ -44,10 +46,8 @@ controller:
                 serverUrl: "https://kubernetes.default"
                 namespace: "jenkins"
                 skipTlsVerify: true
-
-                jenkinsUrl: "http://jenkins-local-k3d:8080"
+                jenkinsUrl:    "http://jenkins-local-k3d:8080"
                 jenkinsTunnel: "jenkins-local-k3d-agent:50000"
-
                 containerCap: 10
                 connectTimeout: 5
                 readTimeout: 15
@@ -57,22 +57,22 @@ controller:
                     label: "jenkins-agent"
                     nodeUsageMode: NORMAL
                     idleMinutes: 1
-
                     containers:
                       - name: jnlp
                         image: "jenkins/inbound-agent:3309.v27b_9314fd1a_4-1"
+                        args: ['$(JENKINS_SECRET)', '$(JENKINS_NAME)']
                         ttyEnabled: true
                         resourceRequestCpu: "100m"
                         resourceRequestMemory: "128Mi"
 
                       - name: nodejs
                         image: "node:18"
-                        command: "cat"
+                        command: ['cat']
                         ttyEnabled: true
 
                       - name: kaniko
                         image: "gcr.io/kaniko-project/executor:latest"
-                        args: "--help"
+                        args: ["--help"]
                         ttyEnabled: true
 
         unclassified:
@@ -85,13 +85,11 @@ controller:
             domainCredentials:
               - credentials:
                   - usernamePassword:
-                      scope: GLOBAL
                       id: "dockerhub-credentials"
                       username: "${DOCKERHUB_USERNAME}"
                       password: "${DOCKERHUB_TOKEN}"
                       description: "DockerHub Access Token"
                   - usernamePassword:
-                      scope: GLOBAL
                       id: "github-ci-token"
                       username: "dummy"
                       password: "${GITHUB_TOKEN}"
@@ -113,8 +111,9 @@ controller:
     - ssh-credentials
     - github-oauth
     - role-strategy
-    # - blueocean
+    # - blueocean   # Activa si quieres la UI BlueOcean
 
+  # Probes
   livenessProbe:
     httpGet: { path: /login, port: 8080 }
     initialDelaySeconds: 90
@@ -141,23 +140,37 @@ controller:
     runAsGroup: 1000
     fsGroup: 1000
 
+# ───── Persistencia del controller ─────
 persistence:
   enabled: true
   storageClass: local-path
   size: 8Gi
 
+# ───── Service del controller ─────
 service:
   type: ClusterIP
-  agentListenerPort: 50000
+  agentListenerPort: 50000 # puerto para JNLP
 
+# ───── Plantilla de agente por defecto ─────
 agent:
   podName: "jenkins-agent"
   customJenkinsLabels: ["jenkins-agent"]
+  nodeUsageMode: NORMAL
+  runAsUser: 1000
+  connectTimeout: 100
+
   containers:
     - name: jnlp
       image: "jenkins/inbound-agent:3309.v27b_9314fd1a_4-1"
       args: ["$(JENKINS_SECRET)", "$(JENKINS_NAME)"]
       ttyEnabled: true
-  nodeUsageMode: NORMAL
-  runAsUser: 1000
-  connectTimeout: 100
+
+    - name: nodejs
+      image: "node:18"
+      command: ["cat"]
+      ttyEnabled: true
+
+    - name: kaniko
+      image: "gcr.io/kaniko-project/executor:latest"
+      args: ["--help"]
+      ttyEnabled: true
