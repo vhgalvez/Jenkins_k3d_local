@@ -44,6 +44,7 @@ controller:
           authorizationStrategy:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
+
           clouds:
             - kubernetes:
                 name: "kubernetes"
@@ -60,7 +61,7 @@ controller:
                     idleMinutes: 1
                     containers:
                       - name: jnlp
-                        image: jenkins/inbound-agent:3107.v665000b_51092-10
+                        image: "jenkins/inbound-agent:3107.v665000b_51092-10"
                         args:
                           - --agent
                           - jnlp
@@ -71,12 +72,12 @@ controller:
                         resourceLimitCpu: "500m"
                         resourceLimitMemory: "512Mi"
                       - name: nodejs
-                        image: node:18
+                        image: "node:18"
                         command:
                           - cat
                         ttyEnabled: true
                       - name: kaniko
-                        image: gcr.io/kaniko-project/executor:latest
+                        image: "gcr.io/kaniko-project/executor:latest"
                         args:
                           - "--help"
                         ttyEnabled: true
@@ -112,7 +113,7 @@ controller:
     - workflow-aggregator
     - git
     - docker-workflow
-    # - blueocean  # ❌ Desactivado por incompatibilidad SSE
+    # - blueocean
     - configuration-as-code
     - credentials-binding
     - ssh-credentials
@@ -128,19 +129,19 @@ agent:
   nodeUsageMode: NORMAL
   containers:
     - name: jnlp
-      image: jenkins/inbound-agent:3107.v665000b_51092-10
+      image: "jenkins/inbound-agent:3107.v665000b_51092-10"
       args:
         - --agent
         - jnlp
         - --workDir=/home/jenkins/agent
       ttyEnabled: true
     - name: nodejs
-      image: node:18
+      image: "node:18"
       command:
         - cat
       ttyEnabled: true
     - name: kaniko
-      image: gcr.io/kaniko-project/executor:latest
+      image: "gcr.io/kaniko-project/executor:latest"
       args:
         - "--help"
       ttyEnabled: true
