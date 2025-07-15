@@ -2,26 +2,31 @@
 controller:
   image:
     repository: jenkins/jenkins
-    tag: "2.518‑jdk21"
+    tag: "2.518-jdk21"
+    pullPolicy: IfNotPresent
 
-  # ─── Credenciales de admin ─────────────────────────────
   admin:
     existingSecret: jenkins-admin
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
-  # ─── Variables de entorno desde secretos ───────────────
   containerEnv:
     - name: DOCKERHUB_USERNAME
       valueFrom:
-        { secretKeyRef: { name: dockerhub-credentials, key: username } }
+        secretKeyRef:
+          name: dockerhub-credentials
+          key: username
     - name: DOCKERHUB_TOKEN
       valueFrom:
-        { secretKeyRef: { name: dockerhub-credentials, key: password } }
+        secretKeyRef:
+          name: dockerhub-credentials
+          key: password
     - name: GITHUB_TOKEN
-      valueFrom: { secretKeyRef: { name: github-ci-token, key: token } }
+      valueFrom:
+        secretKeyRef:
+          name: github-ci-token
+          key: token
 
-  # ─── JCasC ──────────────────────────────────────────────
   JCasC:
     enabled: true
     defaultConfig: false
@@ -39,7 +44,6 @@ controller:
           authorizationStrategy:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
-
           clouds:
             - kubernetes:
                 name: kubernetes
@@ -57,8 +61,10 @@ controller:
                     containers:
                       - name: jnlp
                         image: jenkins/inbound-agent:3107.v665000b_51092-10
-                        # ⇣ SCALAR, no lista
-                        args: "--agent jnlp --workDir=/home/jenkins/agent"
+                        args:
+                          - --agent
+                          - jnlp
+                          - --workDir=/home/jenkins/agent
                         ttyEnabled: true
                         resourceRequestCpu: 100m
                         resourceRequestMemory: 128Mi
@@ -70,7 +76,8 @@ controller:
                         ttyEnabled: true
                       - name: kaniko
                         image: gcr.io/kaniko-project/executor:latest
-                        args: "--help"
+                        args:
+                          - "--help"
                         ttyEnabled: true
 
         unclassified:
@@ -102,7 +109,6 @@ controller:
     - workflow-aggregator
     - git
     - docker-workflow
-    # comentado BlueOcean para evitar dependencia sse‑gateway
     # - blueocean
     - configuration-as-code
     - credentials-binding
@@ -112,15 +118,18 @@ controller:
     - github-oauth
     - role-strategy
 
-# ─── Plantilla por defecto de agentes freestyle ──────────
 agent:
   podName: jenkins-agent
-  customJenkinsLabels: [jenkins-agent]
+  customJenkinsLabels:
+    - jenkins-agent
   nodeUsageMode: NORMAL
   containers:
     - name: jnlp
       image: jenkins/inbound-agent:3107.v665000b_51092-10
-      args: "--agent jnlp --workDir=/home/jenkins/agent"
+      args:
+        - --agent
+        - jnlp
+        - --workDir=/home/jenkins/agent
       ttyEnabled: true
     - name: nodejs
       image: node:18
@@ -128,7 +137,8 @@ agent:
       ttyEnabled: true
     - name: kaniko
       image: gcr.io/kaniko-project/executor:latest
-      args: "--help"
+      args:
+        - "--help"
       ttyEnabled: true
   runAsUser: 1000
   connectTimeout: 100
