@@ -13,12 +13,19 @@ controller:
   containerEnv:
     - name: DOCKERHUB_USERNAME
       valueFrom:
-        { secretKeyRef: { name: dockerhub-credentials, key: username } }
+        secretKeyRef:
+          name: dockerhub-credentials
+          key: username
     - name: DOCKERHUB_TOKEN
       valueFrom:
-        { secretKeyRef: { name: dockerhub-credentials, key: password } }
+        secretKeyRef:
+          name: dockerhub-credentials
+          key: password
     - name: GITHUB_TOKEN
-      valueFrom: { secretKeyRef: { name: github-ci-token, key: token } }
+      valueFrom:
+        secretKeyRef:
+          name: github-ci-token
+          key: token
 
   JCasC:
     enabled: true
@@ -32,7 +39,7 @@ controller:
               allowsSignup: false
               enableCaptcha: false
               users:
-                - id: "${JENKINS_ADMIN_USER}"
+                - id: ${JENKINS_ADMIN_USER}
                   password: "${JENKINS_ADMIN_PASSWORD_HASH}"
           authorizationStrategy:
             loggedInUsersCanDoAnything:
@@ -44,7 +51,7 @@ controller:
                 serverUrl: "https://kubernetes.default"
                 namespace: "jenkins"
                 skipTlsVerify: true
-                jenkinsUrl: "http://jenkins-local-k3d:8080"
+                jenkinsUrl:    "http://jenkins-local-k3d:8080"
                 jenkinsTunnel: "jenkins-local-k3d-agent:50000"
                 containerCap: 10
                 connectTimeout: 5
@@ -58,23 +65,20 @@ controller:
                     containers:
                       - name: jnlp
                         image: "jenkins/inbound-agent:3309.v27b_9314fd1a_4-1"
-                        args: ['$(JENKINS_SECRET)', '$(JENKINS_NAME)']
+                        args: "$(JENKINS_SECRET) $(JENKINS_NAME)"
                         ttyEnabled: true
-                        alwaysPullImage: false
                         resourceRequestCpu: "100m"
                         resourceRequestMemory: "128Mi"
 
                       - name: nodejs
                         image: "node:18"
-                        command: ['cat']
+                        command: "cat"
                         ttyEnabled: true
-                        alwaysPullImage: false
 
                       - name: kaniko
                         image: "gcr.io/kaniko-project/executor:latest"
-                        args: ["--help"]
+                        args: "--help"
                         ttyEnabled: true
-                        alwaysPullImage: false
 
         unclassified:
           location:
@@ -112,21 +116,27 @@ controller:
     - role-strategy
 
   livenessProbe:
-    httpGet: { path: /login, port: 8080 }
+    httpGet:
+      path: /login
+      port: 8080
     initialDelaySeconds: 90
     periodSeconds: 10
     failureThreshold: 5
     timeoutSeconds: 5
 
   readinessProbe:
-    httpGet: { path: /login, port: 8080 }
+    httpGet:
+      path: /login
+      port: 8080
     initialDelaySeconds: 60
     periodSeconds: 10
     failureThreshold: 3
     timeoutSeconds: 5
 
   startupProbe:
-    httpGet: { path: /login, port: 8080 }
+    httpGet:
+      path: /login
+      port: 8080
     initialDelaySeconds: 120
     periodSeconds: 10
     failureThreshold: 18
