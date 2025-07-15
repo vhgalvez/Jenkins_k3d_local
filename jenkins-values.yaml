@@ -63,7 +63,10 @@ controller:
                     containers:
                       - name: jnlp
                         image: "jenkins/inbound-agent:3107.v665000b_51092-10"
-                        args: "${computer.jnlpmac} ${computer.name}"
+                        args:
+                          - --agent
+                          - jnlp
+                          - --workDir=/home/jenkins/agent
                         ttyEnabled: true
                         resourceRequestCpu: "100m"
                         resourceRequestMemory: "128Mi"
@@ -166,6 +169,10 @@ agent:
   containers:
     - name: jnlp
       image: "jenkins/inbound-agent:3107.v665000b_51092-10"
+      args:
+        - --agent
+        - jnlp
+        - --workDir=/home/jenkins/agent
       ttyEnabled: true
     - name: nodejs
       image: "node:18"
