@@ -18,11 +18,13 @@ controller:
   # ──────────────────────────────────────────────
   containerEnv:
     - name: DOCKERHUB_USERNAME
-      valueFrom: { secretKeyRef: { name: dockerhub-credentials, key: username } }
+      valueFrom:
+        { secretKeyRef: { name: dockerhub-credentials, key: username } }
     - name: DOCKERHUB_TOKEN
-      valueFrom: { secretKeyRef: { name: dockerhub-credentials, key: password } }
+      valueFrom:
+        { secretKeyRef: { name: dockerhub-credentials, key: password } }
     - name: GITHUB_TOKEN
-      valueFrom: { secretKeyRef: { name: github-ci-token,     key: token    } }
+      valueFrom: { secretKeyRef: { name: github-ci-token, key: token } }
 
   # ──────────────────────────────────────────────
   #  Jenkins Configuration as Code
@@ -56,31 +58,33 @@ controller:
                 containerCap: 10
                 connectTimeout: 5
                 readTimeout: 15
+
                 templates:
                   - name: "default"
-                    label: "jenkins-agent"          # <- usado en 'inheritFrom'
+                    label: "jenkins-agent"     # ← usa esto en `inheritFrom`
                     nodeUsageMode: NORMAL
                     idleMinutes: 1
+
                     containers:
-                      # --- contenedor JNLP (obligatorio) ---
+                      # ── contenedor JNLP (obligatorio) ──
                       - name: jnlp
                         image: "jenkins/inbound-agent:3309.v27b_9314fd1a_4-1"
-                        args:
-                          - "$(JENKINS_SECRET)"
-                          - "$(JENKINS_NAME)"
                         ttyEnabled: true
                         resourceRequestCpu: "100m"
                         resourceRequestMemory: "128Mi"
-                      # --- contenedor principal con Node.js ---
+
+                      # ── contenedor principal con Node.js ──
                       - name: nodejs
                         image: "node:18"
-                        command: ["cat"]
+                        command: "cat"          # ← cadena, no lista
                         ttyEnabled: true
-                      # --- contenedor Kaniko para builds ---
+
+                      # ── contenedor Kaniko para los builds ──
                       - name: kaniko
                         image: "gcr.io/kaniko-project/executor:latest"
-                        args: ["--help"]
+                        args: "--help"          # ← cadena, no lista
                         ttyEnabled: true
+
 
         unclassified:
           location:
