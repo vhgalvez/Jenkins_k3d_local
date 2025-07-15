@@ -347,7 +347,7 @@ Verifica los secretos creados:
 ```bash
 kubectl get secrets -n jenkins
 ```
-
+kubectl get pods -n jenkins -w
 
 ## 📜 Licencia
 
