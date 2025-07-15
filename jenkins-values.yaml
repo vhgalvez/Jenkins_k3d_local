@@ -58,7 +58,7 @@ controller:
                 readTimeout: 15
 
                 templates:
-                  - name: "jnlp-agent"
+                  - name: "jenkins-agent"
                     label: "jenkins-agent"
                     nodeUsageMode: NORMAL
                     idleMinutes: 1
