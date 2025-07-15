@@ -77,8 +77,8 @@ controller:
 
                       - name: kaniko
                         image: gcr.io/kaniko-project/executor:latest
-                        command: ['/busybox/cat']
-                        args: ['sleep', 'infinity']
+                        command: ["/busybox/sleep"]
+                        args: ["infinity"]
                         ttyEnabled: true
 
         unclassified:
@@ -101,7 +101,6 @@ controller:
                       password: "${GITHUB_TOKEN}"
                       description: "GitHub Token for Push from Jenkins"
 
-  # ❗ Necesario para evitar errores de Helm si no usas configAutoReload
   sidecars:
     configAutoReload:
       enabled: false
