@@ -10,18 +10,23 @@ controller:
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
-  # ───── Vars de entorno suministradas por Secrets ─────
   containerEnv:
     - name: DOCKERHUB_USERNAME
       valueFrom:
-        { secretKeyRef: { name: dockerhub-credentials, key: username } }
+        secretKeyRef:
+          name: dockerhub-credentials
+          key: username
     - name: DOCKERHUB_TOKEN
       valueFrom:
-        { secretKeyRef: { name: dockerhub-credentials, key: password } }
+        secretKeyRef:
+          name: dockerhub-credentials
+          key: password
     - name: GITHUB_TOKEN
-      valueFrom: { secretKeyRef: { name: github-ci-token, key: token } }
+      valueFrom:
+        secretKeyRef:
+          name: github-ci-token
+          key: token
 
-  # ───── Configuration‑as‑Code ─────
   JCasC:
     enabled: true
     defaultConfig: false
@@ -46,14 +51,14 @@ controller:
                 serverUrl: "https://kubernetes.default"
                 namespace: "jenkins"
                 skipTlsVerify: true
-                jenkinsUrl:    "http://jenkins-local-k3d:8080"
+                jenkinsUrl: "http://jenkins-local-k3d:8080"
                 jenkinsTunnel: "jenkins-local-k3d-agent:50000"
                 containerCap: 10
                 connectTimeout: 5
                 readTimeout: 15
 
                 templates:
-                  - name: "default"
+                  - name: "jnlp-agent"  # 👈 Nombre explícito para evitar default-XXXX
                     label: "jenkins-agent"
                     nodeUsageMode: NORMAL
                     idleMinutes: 1
@@ -111,25 +116,29 @@ controller:
     - ssh-credentials
     - github-oauth
     - role-strategy
-    # - blueocean   # Activa si quieres la UI BlueOcean
 
-  # Probes
   livenessProbe:
-    httpGet: { path: /login, port: 8080 }
+    httpGet:
+      path: /login
+      port: 8080
     initialDelaySeconds: 90
     periodSeconds: 10
     failureThreshold: 5
     timeoutSeconds: 5
 
   readinessProbe:
-    httpGet: { path: /login, port: 8080 }
+    httpGet:
+      path: /login
+      port: 8080
     initialDelaySeconds: 60
     periodSeconds: 10
     failureThreshold: 3
     timeoutSeconds: 5
 
   startupProbe:
-    httpGet: { path: /login, port: 8080 }
+    httpGet:
+      path: /login
+      port: 8080
     initialDelaySeconds: 120
     periodSeconds: 10
     failureThreshold: 18
@@ -140,37 +149,11 @@ controller:
     runAsGroup: 1000
     fsGroup: 1000
 
-# ───── Persistencia del controller ─────
 persistence:
   enabled: true
   storageClass: local-path
   size: 8Gi
 
-# ───── Service del controller ─────
 service:
   type: ClusterIP
-  agentListenerPort: 50000 # puerto para JNLP
-
-# ───── Plantilla de agente por defecto ─────
-agent:
-  podName: "jenkins-agent"
-  customJenkinsLabels: ["jenkins-agent"]
-  nodeUsageMode: NORMAL
-  runAsUser: 1000
-  connectTimeout: 100
-
-  containers:
-    - name: jnlp
-      image: "jenkins/inbound-agent:3309.v27b_9314fd1a_4-1"
-      args: ["$(JENKINS_SECRET)", "$(JENKINS_NAME)"]
-      ttyEnabled: true
-
-    - name: nodejs
-      image: "node:18"
-      command: ["cat"]
-      ttyEnabled: true
-
-    - name: kaniko
-      image: "gcr.io/kaniko-project/executor:latest"
-      args: ["--help"]
-      ttyEnabled: true
+  agentListenerPort: 50000
