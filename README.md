@@ -353,7 +353,10 @@ kubectl delete jobs --all -n jenkins
 
 kubectl delete pods --all -n jenkins
 
+ kubectl delete pod -n jenkins -l jenkins=slave
 
+ 
 ## 📜 Licencia
+
 
 MIT © [https://github.com/vhgalvez](https://github.com/vhgalvez)
