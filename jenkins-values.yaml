@@ -1,15 +1,17 @@
 # jenkins-values.yaml
 controller:
   image:
-    repository: jenkins/jenkins
+    repository: jenkins/jenkins # Jenkins 2.518 con JDK 21
     tag: "2.518-jdk21"
     pullPolicy: IfNotPresent
 
+  # ───────── Usuario admin (se almacena en un Secret existente) ─────────
   admin:
     existingSecret: jenkins-admin
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
+  # ───────── Variables de entorno provenientes de Secrets ─────────
   containerEnv:
     - name: DOCKERHUB_USERNAME
       valueFrom:
@@ -27,6 +29,7 @@ controller:
           name: github-ci-token
           key: token
 
+  # ───────── Jenkins Configuration as Code ─────────
   JCasC:
     enabled: true
     defaultConfig: false
@@ -51,18 +54,23 @@ controller:
                 serverUrl: "https://kubernetes.default"
                 namespace: "jenkins"
                 skipTlsVerify: true
-                jenkinsUrl: "http://jenkins-local-k3d:8080"
+
+                # Services que expone el chart
+                jenkinsUrl:    "http://jenkins-local-k3d:8080"
                 jenkinsTunnel: "jenkins-local-k3d-agent:50000"
+
                 containerCap: 10
                 connectTimeout: 5
                 readTimeout: 15
 
                 templates:
-                  - name: "jnlp-agent"  # 👈 Nombre explícito para evitar default-XXXX
-                    label: "jenkins-agent"
+                  - name: "jnlp-agent"        # ← nombre fijo (antes era aleatorio)
+                    label: "jenkins-agent"    # ← el mismo que usas con inheritFrom
                     nodeUsageMode: NORMAL
                     idleMinutes: 1
+
                     containers:
+                      # --- contenedor JNLP (obligatorio) ---
                       - name: jnlp
                         image: "jenkins/inbound-agent:3309.v27b_9314fd1a_4-1"
                         args: ['$(JENKINS_SECRET)', '$(JENKINS_NAME)']
@@ -70,11 +78,13 @@ controller:
                         resourceRequestCpu: "100m"
                         resourceRequestMemory: "128Mi"
 
+                      # --- contenedor Node.js principal ---
                       - name: nodejs
                         image: "node:18"
                         command: ['cat']
                         ttyEnabled: true
 
+                      # --- contenedor Kaniko (build & push) ---
                       - name: kaniko
                         image: "gcr.io/kaniko-project/executor:latest"
                         args: ["--help"]
@@ -90,20 +100,19 @@ controller:
             domainCredentials:
               - credentials:
                   - usernamePassword:
+                      scope: GLOBAL
                       id: "dockerhub-credentials"
                       username: "${DOCKERHUB_USERNAME}"
                       password: "${DOCKERHUB_TOKEN}"
-                      description: "DockerHub Access Token"
+                      description: "DockerHub access token"
                   - usernamePassword:
+                      scope: GLOBAL
                       id: "github-ci-token"
                       username: "dummy"
                       password: "${GITHUB_TOKEN}"
                       description: "GitHub PAT para GitOps"
 
-  sidecars:
-    configAutoReload:
-      enabled: true
-
+  # ───────── Plugins imprescindibles ─────────
   installPlugins:
     - kubernetes
     - workflow-aggregator
@@ -117,6 +126,7 @@ controller:
     - github-oauth
     - role-strategy
 
+  # ───────── Probes (liveness / readiness / startup) ─────────
   livenessProbe:
     httpGet:
       path: /login
@@ -144,16 +154,22 @@ controller:
     failureThreshold: 18
     timeoutSeconds: 5
 
+  # ───────── Seguridad del pod del controller ─────────
   securityContext:
     runAsUser: 1000
     runAsGroup: 1000
     fsGroup: 1000
 
+# ───────── Persistencia ─────────
 persistence:
   enabled: true
   storageClass: local-path
   size: 8Gi
 
+# ───────── Service del controller ─────────
 service:
   type: ClusterIP
   agentListenerPort: 50000
+# ───────── Sección "agent" del chart
+#  ¡ELIMINADA! — la plantilla se define sólo con JCasC
+# ───────────────────────────────────────────
