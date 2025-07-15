@@ -90,7 +90,11 @@ controller:
         credentials:
           system:
             domainCredentials:
-              - credentials:
+              - domain:
+                  name: "global"
+                  description: "Global credentials"
+                  specifications: []
+                credentials:
                   - usernamePassword:
                       scope: GLOBAL
                       id: "dockerhub-credentials"
