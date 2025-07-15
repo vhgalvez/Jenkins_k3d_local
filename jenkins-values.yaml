@@ -5,28 +5,25 @@ controller:
     tag: "2.518-jdk21"
     pullPolicy: IfNotPresent
 
+  # ─── credenciales de admin ─────────────────────────────
   admin:
     existingSecret: jenkins-admin
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
+  # ─── variables de entorno leídas de secrets ────────────
   containerEnv:
     - name: DOCKERHUB_USERNAME
       valueFrom:
-        secretKeyRef:
-          name: dockerhub-credentials
-          key: username
+        secretKeyRef: { name: dockerhub-credentials, key: username }
     - name: DOCKERHUB_TOKEN
       valueFrom:
-        secretKeyRef:
-          name: dockerhub-credentials
-          key: password
+        secretKeyRef: { name: dockerhub-credentials, key: password }
     - name: GITHUB_TOKEN
       valueFrom:
-        secretKeyRef:
-          name: github-ci-token
-          key: token
+        secretKeyRef: { name: github-ci-token, key: token }
 
+  # ─── configuración JCasC ───────────────────────────────
   JCasC:
     enabled: true
     defaultConfig: false
@@ -41,6 +38,7 @@ controller:
               users:
                 - id: "${JENKINS_ADMIN_USER}"
                   password: "${JENKINS_ADMIN_PASSWORD_HASH}"
+
           authorizationStrategy:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
@@ -62,10 +60,7 @@ controller:
                     containers:
                       - name: jnlp
                         image: "jenkins/inbound-agent:3107.v665000b_51092-10"
-                        args:
-                          - --agent
-                          - jnlp
-                          - --workDir=/home/jenkins/agent
+                        args: ["--agent", "jnlp", "--workDir=/home/jenkins/agent"]
                         ttyEnabled: true
                         resourceRequestCpu: "100m"
                         resourceRequestMemory: "128Mi"
@@ -73,86 +68,77 @@ controller:
                         resourceLimitMemory: "512Mi"
                       - name: nodejs
                         image: "node:18"
-                        command:
-                          - cat
+                        command: ["cat"]
                         ttyEnabled: true
                       - name: kaniko
                         image: "gcr.io/kaniko-project/executor:latest"
-                        args:
-                          - "--help"
+                        args: ["--help"]
                         ttyEnabled: true
 
         unclassified:
           location:
-            adminAddress: "admin@jenkins.local"
             url: "http://jenkins.local"
+            adminAddress: "admin@jenkins.local"
 
+        # ⚠️ bloque de credenciales CORREGIDO
         credentials:
           system:
             domainCredentials:
-              - domain:
-                  name: "global"
-                  description: "Global credentials"
-                  specifications: []
-                credentials:
+              - credentials:
                   - usernamePassword:
                       scope: GLOBAL
                       id: "dockerhub-credentials"
                       username: "${DOCKERHUB_USERNAME}"
                       password: "${DOCKERHUB_TOKEN}"
                       description: "DockerHub Access Token"
-                  - usernamePassword:
+                  - string:
                       scope: GLOBAL
                       id: "github-ci-token"
-                      username: "dummy"
-                      password: "${GITHUB_TOKEN}"
+                      secret: "${GITHUB_TOKEN}"
                       description: "GitHub PAT para GitOps"
 
   sidecars:
     configAutoReload:
       enabled: true
 
+  # plugins imprescindibles
   installPlugins:
     - kubernetes
     - workflow-aggregator
     - git
     - docker-workflow
-    # - blueocean
     - configuration-as-code
-    - credentials-binding
-    - ssh-credentials
     - credentials
     - plain-credentials
-    - github-oauth
+    - credentials-binding
+    - ssh-credentials
     - role-strategy
+    - github-oauth
+    # BlueOcean comentado: # - blueocean
 
+# ─── plantilla base de agentes freestyle ────────────────
 agent:
-  podName: jenkins-agent
-  customJenkinsLabels:
-    - jenkins-agent
+  podName: "jenkins-agent"
+  customJenkinsLabels: ["jenkins-agent"]
   nodeUsageMode: NORMAL
   containers:
     - name: jnlp
       image: "jenkins/inbound-agent:3107.v665000b_51092-10"
-      args:
-        - --agent
-        - jnlp
-        - --workDir=/home/jenkins/agent
+      args: ["--agent", "jnlp", "--workDir=/home/jenkins/agent"]
       ttyEnabled: true
     - name: nodejs
       image: "node:18"
-      command:
-        - cat
+      command: ["cat"]
       ttyEnabled: true
     - name: kaniko
       image: "gcr.io/kaniko-project/executor:latest"
-      args:
-        - "--help"
+      args: ["--help"]
       ttyEnabled: true
   runAsUser: 1000
   connectTimeout: 100
 
+# ─── almacenamiento persistente ─────────────────────────
 persistence:
   enabled: true
   storageClass: local-path
-  size: 8Giz
+  size: 8Gi
