@@ -51,7 +51,7 @@ controller:
                 serverUrl: "https://kubernetes.default"
                 namespace: "jenkins"
                 skipTlsVerify: true
-                jenkinsUrl:    "http://jenkins-local-k3d:8080"
+                jenkinsUrl: "http://jenkins-local-k3d:8080"
                 jenkinsTunnel: "jenkins-local-k3d-agent:50000"
                 containerCap: 10
                 connectTimeout: 5
@@ -65,21 +65,21 @@ controller:
                     containers:
                       - name: jnlp
                         image: "jenkins/inbound-agent:3309.v27b_9314fd1a_4-1"
-                        args: "$(JENKINS_SECRET) $(JENKINS_NAME)"
+                        args: ["$(JENKINS_SECRET)", "$(JENKINS_NAME)"]
                         ttyEnabled: true
                         resourceRequestCpu: "100m"
                         resourceRequestMemory: "128Mi"
 
                       - name: nodejs
                         image: "node:18"
-                        command: "cat"
+                        command: ["cat"]
                         ttyEnabled: true
 
                       - name: kaniko
                         image: "gcr.io/kaniko-project/executor:latest"
-                        args: ""
+                        command: [""]
+                        args: [""]
                         ttyEnabled: true
-
 
         unclassified:
           location:
