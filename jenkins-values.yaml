@@ -77,9 +77,10 @@ controller:
 
                       - name: kaniko
                         image: gcr.io/kaniko-project/executor:latest
-                        command: ["/busybox/cat"]
-                        args: ["-"]
+                        command: ["/busybox/sleep"]
+                        args: ["infinity"]
                         ttyEnabled: true
+
 
         unclassified:
           location:
