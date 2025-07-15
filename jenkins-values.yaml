@@ -88,7 +88,7 @@ controller:
                       id: "dockerhub-credentials"
                       username: "${DOCKERHUB_USERNAME}"
                       password: "${DOCKERHUB_TOKEN}"
-                  - secretText:
+                  - string:
                       scope: GLOBAL
                       id: "github-ci-token"
                       secret: "${GITHUB_TOKEN}"
