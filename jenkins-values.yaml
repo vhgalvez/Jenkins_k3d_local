@@ -155,4 +155,4 @@ agent:
 persistence:
   enabled: true
   storageClass: local-path
-  size: 8Gi
+  size: 8Giz
