@@ -5,17 +5,11 @@ controller:
     tag: "2.518-jdk21"
     pullPolicy: IfNotPresent
 
-  # ──────────────────────────────────────────────
-  #  Credenciales del usuario administrador
-  # ──────────────────────────────────────────────
   admin:
     existingSecret: jenkins-admin
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
-  # ──────────────────────────────────────────────
-  #  Variables de entorno que vienen de Secrets
-  # ──────────────────────────────────────────────
   containerEnv:
     - name: DOCKERHUB_USERNAME
       valueFrom:
@@ -26,9 +20,6 @@ controller:
     - name: GITHUB_TOKEN
       valueFrom: { secretKeyRef: { name: github-ci-token, key: token } }
 
-  # ──────────────────────────────────────────────
-  #  Jenkins Configuration as Code
-  # ──────────────────────────────────────────────
   JCasC:
     enabled: true
     defaultConfig: false
@@ -51,40 +42,38 @@ controller:
             - kubernetes:
                 name: "kubernetes"
                 serverUrl: "https://kubernetes.default"
-                skipTlsVerify: true
                 namespace: "jenkins"
-                jenkinsUrl: "http://jenkins-jenkins:8080"
-                jenkinsTunnel: "jenkins-jenkins-agent:50000"
+                skipTlsVerify: true
+
+                jenkinsUrl: "http://jenkins-local-k3d:8080"
+                jenkinsTunnel: "jenkins-local-k3d-agent:50000"
+
                 containerCap: 10
                 connectTimeout: 5
                 readTimeout: 15
 
                 templates:
                   - name: "default"
-                    label: "jenkins-agent"     # ← usa esto en `inheritFrom`
+                    label: "jenkins-agent"
                     nodeUsageMode: NORMAL
                     idleMinutes: 1
 
                     containers:
-                      # ── contenedor JNLP (obligatorio) ──
                       - name: jnlp
                         image: "jenkins/inbound-agent:3309.v27b_9314fd1a_4-1"
                         ttyEnabled: true
                         resourceRequestCpu: "100m"
                         resourceRequestMemory: "128Mi"
 
-                      # ── contenedor principal con Node.js ──
                       - name: nodejs
                         image: "node:18"
-                        command: "cat"          # ← cadena, no lista
+                        command: "cat"
                         ttyEnabled: true
 
-                      # ── contenedor Kaniko para los builds ──
                       - name: kaniko
                         image: "gcr.io/kaniko-project/executor:latest"
-                        args: "--help"          # ← cadena, no lista
+                        args: "--help"
                         ttyEnabled: true
-
 
         unclassified:
           location:
@@ -108,16 +97,10 @@ controller:
                       password: "${GITHUB_TOKEN}"
                       description: "GitHub PAT para GitOps"
 
-  # ──────────────────────────────────────────────
-  #  Reload automático del fichero JCasC
-  # ──────────────────────────────────────────────
   sidecars:
     configAutoReload:
       enabled: true
 
-  # ──────────────────────────────────────────────
-  #  Plugins necesarios
-  # ──────────────────────────────────────────────
   installPlugins:
     - kubernetes
     - workflow-aggregator
@@ -130,11 +113,8 @@ controller:
     - ssh-credentials
     - github-oauth
     - role-strategy
-    # - blueocean   # ← descomenta si necesitas la UI BlueOcean
+    # - blueocean
 
-  # ──────────────────────────────────────────────
-  #  Sonda de vida / readiness / startup
-  # ──────────────────────────────────────────────
   livenessProbe:
     httpGet: { path: /login, port: 8080 }
     initialDelaySeconds: 90
@@ -156,33 +136,20 @@ controller:
     failureThreshold: 18
     timeoutSeconds: 5
 
-  # ──────────────────────────────────────────────
-  #  Seguridad del pod del controller
-  # ──────────────────────────────────────────────
   securityContext:
     runAsUser: 1000
     runAsGroup: 1000
     fsGroup: 1000
 
-# ──────────────────────────────────────────────
-#  Persistencia
-# ──────────────────────────────────────────────
 persistence:
   enabled: true
   storageClass: local-path
   size: 8Gi
 
-# ──────────────────────────────────────────────
-#  Service del controller
-# ──────────────────────────────────────────────
 service:
   type: ClusterIP
   agentListenerPort: 50000
 
-# ------------------------------------------------------------------
-#  Sección ‘agent’ del chart: ya no definimos nodejs/kaniko aquí.
-#  El pipeline usa inheritFrom → jenkins-agent (definido en JCasC).
-# ------------------------------------------------------------------
 agent:
   podName: "jenkins-agent"
   customJenkinsLabels: ["jenkins-agent"]
