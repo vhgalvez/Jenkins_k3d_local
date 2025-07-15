@@ -5,17 +5,11 @@ controller:
     tag: "2.518-jdk21"
     pullPolicy: IfNotPresent
 
-  # ─────────────────────────────────────────────────────────────
-  # Credenciales de administrador pre‑creadas en un Secret
-  # ─────────────────────────────────────────────────────────────
   admin:
     existingSecret: jenkins-admin
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
-  # ─────────────────────────────────────────────────────────────
-  # Variables de entorno que tomarán valores desde Secrets
-  # ─────────────────────────────────────────────────────────────
   containerEnv:
     - name: DOCKERHUB_USERNAME
       valueFrom:
@@ -33,9 +27,6 @@ controller:
           name: github-ci-token
           key: token
 
-  # ─────────────────────────────────────────────────────────────
-  # Jenkins Configuration as Code
-  # ─────────────────────────────────────────────────────────────
   JCasC:
     enabled: true
     defaultConfig: false
@@ -65,34 +56,31 @@ controller:
                 containerCap: 10
                 connectTimeout: 5
                 readTimeout: 15
+                templates:
+                  - name: "jenkins-agent"
+                    label: "jenkins-agent"
+                    nodeUsageMode: NORMAL
+                    idleMinutes: 1
+                    containers:
+                      - name: jnlp
+                        image: jenkins/inbound-agent:3309.v27b_9314fd1a_4-1
+                        args:
+                          - "$(JENKINS_SECRET)"
+                          - "$(JENKINS_NAME)"
+                        ttyEnabled: true
+                        resourceRequestCpu: "100m"
+                        resourceRequestMemory: "128Mi"
 
-            templates:
-                - name: "jenkins-agent"
-                  label: "jenkins-agent"
-                  nodeUsageMode: NORMAL
-                  idleMinutes: 1
-                  containers:
-                    # ─── Contenedor JNLP obligatorio ─────────────────────
-                    - name: jnlp
-                      image: jenkins/inbound-agent:3309.v27b_9314fd1a_4-1
-                      args: "$(JENKINS_SECRET) $(JENKINS_NAME)"
-                      ttyEnabled: true
-                      resourceRequestCpu: "100m"
-                      resourceRequestMemory: "128Mi"
+                      - name: nodejs
+                        image: node:18
+                        command: ["cat"]
+                        ttyEnabled: true
 
-                    # ─── Contenedor Node.js para tests/build ─────────────
-                    - name: nodejs
-                      image: node:18
-                      command: ["cat"]
-                      ttyEnabled: true
-
-                    # ─── Contenedor Kaniko para construir/pushear imágenes ───
-                    - name: kaniko
-                      image: gcr.io/kaniko-project/executor:latest
-                      command: ["/kaniko/executor"]
-                      args: ["--help"]
-                      ttyEnabled: true
-
+                      - name: kaniko
+                        image: gcr.io/kaniko-project/executor:latest
+                        command: ["/kaniko/executor"]
+                        args: ["--help"]
+                        ttyEnabled: true
 
         unclassified:
           location:
@@ -114,16 +102,10 @@ controller:
                       password: "${GITHUB_TOKEN}"
                       description: "GitHub PAT para GitOps"
 
-  # ─────────────────────────────────────────────────────────────
-  # Desactiva sidecar de auto‑reload (evita error en chart)
-  # ─────────────────────────────────────────────────────────────
   sidecars:
     configAutoReload:
       enabled: false
 
-  # ─────────────────────────────────────────────────────────────
-  # Plugins adicionales
-  # ─────────────────────────────────────────────────────────────
   installPlugins:
     - kubernetes
     - workflow-aggregator
@@ -137,9 +119,6 @@ controller:
     - github-oauth
     - role-strategy
 
-  # ─────────────────────────────────────────────────────────────
-  # Probes (liveness‑/readiness‑/startup‑)
-  # ─────────────────────────────────────────────────────────────
   livenessProbe:
     httpGet:
       path: /login
@@ -167,25 +146,16 @@ controller:
     failureThreshold: 18
     timeoutSeconds: 5
 
-  # ─────────────────────────────────────────────────────────────
-  # Seguridad en el contenedor
-  # ─────────────────────────────────────────────────────────────
   securityContext:
     runAsUser: 1000
     runAsGroup: 1000
     fsGroup: 1000
 
-# ─────────────────────────────────────────────────────────────────
-# PVC del controller
-# ─────────────────────────────────────────────────────────────────
 persistence:
   enabled: true
   storageClass: local-path
   size: 8Gi
 
-# ─────────────────────────────────────────────────────────────────
-# Servicio
-# ─────────────────────────────────────────────────────────────────
 service:
   type: ClusterIP
   agentListenerPort: 50000
