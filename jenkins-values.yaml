@@ -27,20 +27,22 @@ controller:
           name: github-ci-token
           key: token
 
+  # ─── Jenkins Configuration as Code ─────────────────────
   JCasC:
     enabled: true
     defaultConfig: false
     configScripts:
       main: |
         jenkins:
-          systemMessage: "Bienvenido a Jenkins 🚀"
+          systemMessage: "Bienvenido a Jenkins"
           securityRealm:
             local:
               allowsSignup: false
               enableCaptcha: false
               users:
-                - id: ${JENKINS_ADMIN_USER}
+                - id: "${JENKINS_ADMIN_USER}"
                   password: "${JENKINS_ADMIN_PASSWORD_HASH}"
+
           authorizationStrategy:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
@@ -49,36 +51,32 @@ controller:
             - kubernetes:
                 name: "kubernetes"
                 serverUrl: "https://kubernetes.default"
-                namespace: "jenkins"
                 skipTlsVerify: true
-                jenkinsUrl: "http://jenkins-local-k3d:8080"
-                jenkinsTunnel: "jenkins-local-k3d-agent:50000"
+                namespace: "jenkins"
+                jenkinsUrl: "http://jenkins-jenkins:8080"
+                jenkinsTunnel: "jenkins-jenkins-agent:50000"
                 containerCap: 10
-                connectTimeout: 5
-                readTimeout: 15
-
                 templates:
-                  - name: "jenkins-agent"
+                  - name: "default"
                     label: "jenkins-agent"
                     nodeUsageMode: NORMAL
                     idleMinutes: 1
                     containers:
                       - name: jnlp
-                        image: "jenkins/inbound-agent:3309.v27b_9314fd1a_4-1"
-                        args: ["$(JENKINS_SECRET)", "$(JENKINS_NAME)"]
+                        image: "jenkins/inbound-agent:3107.v665000b_51092-10"
+                        args: ["--agent", "jnlp", "--workDir=/home/jenkins/agent"]
                         ttyEnabled: true
                         resourceRequestCpu: "100m"
                         resourceRequestMemory: "128Mi"
-
+                        resourceLimitCpu: "500m"
+                        resourceLimitMemory: "512Mi"
                       - name: nodejs
                         image: "node:18"
                         command: ["cat"]
                         ttyEnabled: true
-
                       - name: kaniko
                         image: "gcr.io/kaniko-project/executor:latest"
-                        command: [""]
-                        args: [""]
+                        args: ["--help"]
                         ttyEnabled: true
 
         unclassified:
@@ -86,6 +84,7 @@ controller:
             url: "http://jenkins.local"
             adminAddress: "admin@jenkins.local"
 
+        # ── CREDENCIALES (forma mínima y correcta) ─────────
         credentials:
           system:
             domainCredentials:
@@ -95,14 +94,10 @@ controller:
                       id: "dockerhub-credentials"
                       username: "${DOCKERHUB_USERNAME}"
                       password: "${DOCKERHUB_TOKEN}"
-                      description: "DockerHub access token"
-                  - usernamePassword:
+                  - string:
                       scope: GLOBAL
                       id: "github-ci-token"
-                      username: "dummy"
-                      password: "${GITHUB_TOKEN}"
-                      description: "GitHub PAT para GitOps"
-
+                      secret: "${GITHUB_TOKEN}"
   installPlugins:
     - kubernetes
     - workflow-aggregator
