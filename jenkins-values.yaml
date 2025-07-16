@@ -3,7 +3,6 @@ controller:
   image:
     repository: jenkins/jenkins
     tag: "2.518-jdk21"
-    pullPolicy: IfNotPresent
 
   admin:
     existingSecret: jenkins-admin
@@ -64,9 +63,6 @@ controller:
                     containers:
                       - name: jnlp
                         image: "jenkins/inbound-agent:3107.v665000b_51092-10"
-                        args:
-                          - "${computer.jnlpmac}"
-                          - "${computer.name}"
                         ttyEnabled: true
                         resourceRequestCpu: "100m"
                         resourceRequestMemory: "128Mi"
@@ -85,7 +81,7 @@ controller:
                         ttyEnabled: true
                         alwaysPullImage: true
                         command: ["cat"]
-                        args: []
+                        args: []            # ← lista vacía permitida
                         securityContext:
                           runAsUser: 0
                         resourceRequestCpu: "500m"
@@ -103,14 +99,14 @@ controller:
                 - credentials:
                     - usernamePassword:
                         scope: GLOBAL
-                        id: "dockerhub-credentials"
+                        id: dockerhub-credentials
                         username: "${DOCKERHUB_USERNAME}"
                         password: "${DOCKERHUB_TOKEN}"
                         description: "DockerHub Access Token for CI/CD"
                     - usernamePassword:
                         scope: GLOBAL
-                        id: "github-ci-token"
-                        username: "dummy"
+                        id: github-ci-token
+                        username: dummy
                         password: "${GITHUB_TOKEN}"
                         description: "GitHub Token for Push from Jenkins"
 
@@ -136,43 +132,7 @@ controller:
     - github-oauth
     - role-strategy
 
-  livenessProbe:
-    httpGet:
-      path: /login
-      port: 8080
-    initialDelaySeconds: 90
-    periodSeconds: 10
-    failureThreshold: 5
-    timeoutSeconds: 5
-
-  readinessProbe:
-    httpGet:
-      path: /login
-      port: 8080
-    initialDelaySeconds: 60
-    periodSeconds: 10
-    failureThreshold: 3
-    timeoutSeconds: 5
-
-  startupProbe:
-    httpGet:
-      path: /login
-      port: 8080
-    initialDelaySeconds: 120
-    periodSeconds: 10
-    failureThreshold: 18
-    timeoutSeconds: 5
-
-  securityContext:
-    runAsUser: 1000
-    runAsGroup: 1000
-    fsGroup: 1000
-
 persistence:
   enabled: true
   storageClass: local-path
   size: 8Gi
-
-service:
-  type: ClusterIP
-  agentListenerPort: 50000
