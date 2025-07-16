@@ -83,12 +83,13 @@ controller:
                         image: "gcr.io/kaniko-project/executor:latest-debug"
                         ttyEnabled: true
                         alwaysPullImage: true
-                        command: ["/kaniko/executor"]
-                        args: ["--help"]
+                        command: "/kaniko/executor"
+                        args: "--help"
                         resourceRequestCpu: "500m"
                         resourceRequestMemory: "1Gi"
                         resourceLimitCpu: "2"
                         resourceLimitMemory: "2Gi"
+
                     volumes:
                       - secretVolume:
                           mountPath: "/kaniko/.docker"
