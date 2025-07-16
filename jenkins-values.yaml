@@ -61,7 +61,6 @@ controller:
                     nodeUsageMode: NORMAL
                     idleMinutes: 1
 
-                    ##### CONTENEDORES #####
                     containers:
                       - name: jnlp
                         image: "jenkins/inbound-agent:3107.v665000b_51092-10"
@@ -75,7 +74,7 @@ controller:
                       - name: nodejs
                         image: "node:18-alpine"
                         ttyEnabled: true
-                        command: ["cat"]          # mantiene el contenedor vivo
+                        command: "cat"
                         alwaysPullImage: false
                         resourceRequestCpu: "100m"
                         resourceRequestMemory: "256Mi"
@@ -86,14 +85,13 @@ controller:
                         image: "registry.k8s.io/kaniko-project/executor:v1.23.0-debug"
                         ttyEnabled: true
                         alwaysPullImage: true
-                        command: ["/kaniko/executor"]
-                        args: ["--help"]
+                        command: "/kaniko/executor"
+                        args: "--help"
                         resourceRequestCpu: "250m"
                         resourceRequestMemory: "512Mi"
                         resourceLimitCpu: "1"
                         resourceLimitMemory: "1.5Gi"
 
-                    ##### VOLUMENES #####
                     volumes:
                       - secretVolume:
                           secretName: dockerhub-credentials
