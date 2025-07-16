@@ -107,14 +107,15 @@ controller:
           credentials:
             system:
               domainCredentials:
-                - domain: "global"
-                  credentials:
+                - credentials:
                     - usernamePassword:
+                        scope: GLOBAL
                         id: "dockerhub-credentials"
                         username: "${DOCKERHUB_USERNAME}"
                         password: "${DOCKERHUB_TOKEN}"
                         description: "DockerHub Access Token for CI/CD"
                     - usernamePassword:
+                        scope: GLOBAL
                         id: "github-ci-token"
                         username: "dummy"
                         password: "${GITHUB_TOKEN}"
