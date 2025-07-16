@@ -71,7 +71,7 @@ controller:
                         resourceLimitMemory: "512Mi"
                       - name: nodejs
                         image: "node:18-alpine"
-                        imagePullPolicy: IfNotPresent # Added for clarity
+                        alwaysPullImage: false # Corregido: "IfNotPresent" se mapea a false
                         ttyEnabled: true
                         resourceRequestCpu: "200m"
                         resourceRequestMemory: "512Mi"
@@ -79,23 +79,22 @@ controller:
                         resourceLimitMemory: "1Gi"
                       - name: kaniko
                         image: "gcr.io/kaniko-project/executor:latest-debug"
-                        imagePullPolicy: Always # Ensure latest Kaniko is pulled
+                        alwaysPullImage: true # Corregido: "Always" se mapea a true
                         ttyEnabled: true
                         command: ["cat"]
                         args: []
                         securityContext:
                           runAsUser: 0
-                          # Recommended: Add fsGroup to ensure volume permissions
-                          # runAsGroup: 0 # Might be needed depending on base image
-                          # fsGroup: 65532 # Often used for non-root users, but 0 for root in Kaniko is common
+                          # runAsGroup: 0 # Comentado, si no es estrictamente necesario
+                          # fsGroup: 65532 # Comentado, si no es estrictamente necesario
                         volumeMounts:
                           - name: jenkins-docker-cfg
-                            mountPath: /kaniko/.docker
+                            mountPath: "/kaniko/.docker" # Asegúrate de que este path sea correcto para Kaniko
                         resourceRequestCpu: "500m"
                         resourceRequestMemory: "1Gi"
                         resourceLimitCpu: "2"
                         resourceLimitMemory: "2Gi"
-                volumes: # This 'volumes' block should be at the same indentation level as 'templates'
+                volumes:
                   - name: jenkins-docker-cfg
                     secret:
                       secretName: dockerhub-credentials
