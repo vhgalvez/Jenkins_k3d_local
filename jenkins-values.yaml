@@ -94,9 +94,13 @@ controller:
                         resourceLimitMemory: "1.5Gi"
 
                     volumes:
-                      - secretVolume:
-                          mountPath: "/kaniko/.docker"
-                          secretName: dockerhub-credentials
+                      - mountPath: "/kaniko/.docker"
+                        name: docker-config
+
+                volumes:
+                  - name: docker-config
+                    secret:
+                      secretName: dockerhub-credentials
 
         credentials:
           system:
