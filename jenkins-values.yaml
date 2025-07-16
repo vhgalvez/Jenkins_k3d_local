@@ -94,9 +94,10 @@ controller:
                         resourceLimitCpu: "2"
                         resourceLimitMemory: "2Gi"
                     volumes:
-                      - name: jenkins-docker-cfg
-                        secret:
+                      - secretVolume:
+                          mountPath: "/kaniko/.docker"
                           secretName: dockerhub-credentials
+
 
           credentials:
             system:
