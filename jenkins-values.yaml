@@ -1,4 +1,4 @@
-# ✅ jenkins-values.yaml – Corregido para UnknownAttributesException
+# ✅ jenkins-values.yaml – Mínimo JCasC para depuración
 controller:
   image:
     repository: jenkins/jenkins
@@ -34,40 +34,41 @@ controller:
       main: |
         jenkins:
           systemMessage: "Jenkins listo 🚀"
-          securityRealm:
-            local:
-              allowsSignup: false
-              enableCaptcha: false
-              users:
-                - id: "${JENKINS_ADMIN_USER}"
-                  password: "${JENKINS_ADMIN_PASSWORD_HASH}"
-          authorizationStrategy:
-            loggedInUsersCanDoAnything:
-              allowAnonymousRead: false
+          # Temporarily remove securityRealm and authorizationStrategy for testing
+          # securityRealm:
+          #   local:
+          #     allowsSignup: false
+          #     enableCaptcha: false
+          #     users:
+          #       - id: "${JENKINS_ADMIN_USER}"
+          #         password: "${JENKINS_ADMIN_PASSWORD_HASH}"
+          # authorizationStrategy:
+          #   loggedInUsersCanDoAnything:
+          #     allowAnonymousRead: false
 
-        # --- CORRECCIÓN AQUÍ: MOVIDOS UN NIVEL SUPERIOR ---
-        unclassified:
-          location:
-            url: "http://jenkins.local"
-            adminAddress: "admin@jenkins.local"
+        # Temporarily remove unclassified and credentials for testing
+        # unclassified:
+        #   location:
+        #     url: "http://jenkins.local"
+        #     adminAddress: "admin@jenkins.local"
 
-        credentials:
-          system:
-            domainCredentials:
-              - domain: "global"
-                credentials:
-                  - usernamePassword:
-                      scope: GLOBAL
-                      id: "dockerhub-credentials"
-                      username: "${DOCKERHUB_USERNAME}"
-                      password: "${DOCKERHUB_TOKEN}"
-                      description: "DockerHub token para CI/CD"
-                  - usernamePassword:
-                      scope: GLOBAL
-                      id: "github-ci-token"
-                      username: "dummy"
-                      password: "${GITHUB_TOKEN}"
-                      description: "GitHub PAT para GitOps"
+        # credentials:
+        #   system:
+        #     domainCredentials:
+        #       - domain: "global"
+        #         credentials:
+        #           - usernamePassword:
+        #               scope: GLOBAL
+        #               id: "dockerhub-credentials"
+        #               username: "${DOCKERHUB_USERNAME}"
+        #               password: "${DOCKERHUB_TOKEN}"
+        #               description: "DockerHub token para CI/CD"
+        #           - usernamePassword:
+        #               scope: GLOBAL
+        #               id: "github-ci-token"
+        #               username: "dummy"
+        #               password: "${GITHUB_TOKEN}"
+        #               description: "GitHub PAT para GitOps"
 
   sidecars:
     configAutoReload:
