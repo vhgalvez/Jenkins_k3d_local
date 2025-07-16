@@ -1,17 +1,15 @@
-# jenkins-values.yaml
+# ✅ jenkins-values.yaml – Corregido para "Item isn't a Mapping"
 controller:
   image:
     repository: jenkins/jenkins
     tag: "2.518-jdk21"
     pullPolicy: IfNotPresent
 
-  ## ── Credenciales de admin ya creadas como Secret ──────────────────
   admin:
     existingSecret: jenkins-admin
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
-  ## ── Variables de entorno inyectadas desde Secrets ─────────────────
   containerEnv:
     - name: DOCKERHUB_USERNAME
       valueFrom:
@@ -29,7 +27,6 @@ controller:
           name: github-ci-token
           key: token
 
-  ## ── Jenkins Configuration as Code (solo lo básico) ────────────────
   JCasC:
     enabled: true
     defaultConfig: false
@@ -48,35 +45,34 @@ controller:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
 
-        unclassified:
-          location:
-            url: "http://jenkins.local"
-            adminAddress: "admin@jenkins.local"
+          unclassified:
+            location:
+              url: "http://jenkins.local"
+              adminAddress: "admin@jenkins.local"
 
-        credentials:
-          system:
-            domainCredentials:
-              - domain: "global"
-                credentials:
-                  - usernamePassword:
-                      scope: GLOBAL
-                      id: "dockerhub-credentials"
-                      username: "${DOCKERHUB_USERNAME}"
-                      password: "${DOCKERHUB_TOKEN}"
-                      description: "DockerHub token para CI/CD"
-                  - usernamePassword:
-                      scope: GLOBAL
-                      id: "github-ci-token"
-                      username: "dummy"
-                      password: "${GITHUB_TOKEN}"
-                      description: "GitHub PAT para GitOps"
+          # --- CORRECCIÓN AQUÍ ---
+          credentials:
+            system:
+              domainCredentials:
+                - domain: "global"
+                  credentials: # This should be a list, and each item a mapping type (e.g., usernamePassword, secretText)
+                    - usernamePassword:
+                        scope: GLOBAL
+                        id: "dockerhub-credentials"
+                        username: "${DOCKERHUB_USERNAME}"
+                        password: "${DOCKERHUB_TOKEN}"
+                        description: "DockerHub token para CI/CD"
+                    - usernamePassword:
+                        scope: GLOBAL
+                        id: "github-ci-token"
+                        username: "dummy"
+                        password: "${GITHUB_TOKEN}"
+                        description: "GitHub PAT para GitOps"
 
-  ## ── Desactiva sidecar de autoreload (no necesario) ────────────────
   sidecars:
     configAutoReload:
       enabled: false
 
-  ## ── Plugins mínimos; se quitó “kubernetes” ────────────────────────
   installPlugins:
     - workflow-aggregator
     - git
@@ -89,7 +85,6 @@ controller:
     - github-oauth
     - role-strategy
 
-  ## ── Health‑checks ─────────────────────────────────────────────────
   livenessProbe:
     httpGet: { path: /login, port: 8080 }
     initialDelaySeconds: 90
@@ -111,19 +106,16 @@ controller:
     failureThreshold: 18
     timeoutSeconds: 5
 
-  ## ── Contexto de seguridad ─────────────────────────────────────────
   securityContext:
     runAsUser: 1000
     runAsGroup: 1000
     fsGroup: 1000
 
-# ──────────── PVC para $JENKINS_HOME ─────────────────────────────────
 persistence:
   enabled: true
   storageClass: local-path
   size: 8Gi
 
-# ──────────── Service (solo UI + JNLP listener) ─────────────────────
 service:
   type: ClusterIP
   agentListenerPort: 50000
