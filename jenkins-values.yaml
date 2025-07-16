@@ -50,8 +50,10 @@ controller:
                 serverUrl: "https://kubernetes.default"
                 skipTlsVerify: true
                 namespace: "jenkins"
-                jenkinsUrl: "http://jenkins-jenkins:8080"
-                jenkinsTunnel: "jenkins-jenkins-agent:50000"
+                # ✅ CORRECCIÓN CLAVE AQUÍ: Usamos los nombres de servicio de tu clúster
+                jenkinsUrl: "http://jenkins-local-k3d:8080"
+                # ✅ CORRECCIÓN CLAVE AQUÍ: Usamos los nombres de servicio de tu clúster
+                jenkinsTunnel: "jenkins-local-k3d-agent:50000"
                 containerCap: 10
                 connectTimeout: 5
                 readTimeout: 15
