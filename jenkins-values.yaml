@@ -63,7 +63,7 @@ controller:
                     containers:
                       - name: jnlp
                         image: "jenkins/inbound-agent:3107.v665000b_51092-10"
-                        args: ["${computer.jnlpmac}", "${computer.name}"]
+                        args: "${computer.jnlpmac} ${computer.name}"   # <- cadena
                         ttyEnabled: true
                         resourceRequestCpu: "100m"
                         resourceRequestMemory: "128Mi"
@@ -83,8 +83,8 @@ controller:
                         image: "gcr.io/kaniko-project/executor:latest-debug"
                         ttyEnabled: true
                         alwaysPullImage: true
-                        command: ["/kaniko/executor"]
-                        args: ["--help"]
+                        command: "/kaniko/executor"   # <- cadena
+                        args: "--help"                # <- cadena
                         resourceRequestCpu: "500m"
                         resourceRequestMemory: "1Gi"
                         resourceLimitCpu: "2"
