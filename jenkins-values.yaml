@@ -93,7 +93,6 @@ controller:
                         resourceLimitCpu: "1"
                         resourceLimitMemory: "1.5Gi"
 
-
                     volumes:
                       - secretVolume:
                           mountPath: "/kaniko/.docker"
