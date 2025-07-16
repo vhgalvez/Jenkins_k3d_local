@@ -56,33 +56,20 @@ controller:
                 containerCap: 10
                 connectTimeout: 5
                 readTimeout: 15
-                templates:
-                  - name: "jenkins-agent"
-                    label: "jenkins-agent"
-                    nodeUsageMode: NORMAL
-                    idleMinutes: 1
-                    containers:
-                      - name: jnlp
-                        image: jenkins/inbound-agent:3309.v27b_9314fd1a_4-1
-                        # Simplified args for testing if this is the scalar issue
-                        args:
-                          - "jenkins-slave" # A single, simple scalar for testing
-                        ttyEnabled: true
-                        resourceRequestCpu: "100m"
-                        resourceRequestMemory: "128Mi"
-
-                      # Temporarily comment out sidecar containers for debugging
-                      # - name: nodejs
-                      #   image: node:18
-                      #   command: ["sleep"]
-                      #   args: ["infinity"]
-                      #   ttyEnabled: true
-
-                      # - name: kaniko
-                      #   image: gcr.io/kaniko-project/executor:latest
-                      #   command: ["sleep"]
-                      #   args: ["infinity"]
-                      #   ttyEnabled: true
+                # Comment out the entire templates section
+                # templates:
+                #   - name: "jenkins-agent"
+                #     label: "jenkins-agent"
+                #     nodeUsageMode: NORMAL
+                #     idleMinutes: 1
+                #     containers:
+                #       - name: jnlp
+                #         image: jenkins/inbound-agent:3309.v27b_9314fd1a_4-1
+                #         args:
+                #           - "jenkins-slave"
+                #         ttyEnabled: true
+                #         resourceRequestCpu: "100m"
+                #         resourceRequestMemory: "128Mi"
 
           unclassified:
             location:
