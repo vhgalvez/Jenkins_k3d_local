@@ -63,11 +63,13 @@ controller:
                     containers:
                       - name: jnlp
                         image: "jenkins/inbound-agent:3107.v665000b_51092-10"
+                        args: '${computer.jnlpmac} ${computer.name}'   # ← escalar
                         ttyEnabled: true
                         resourceRequestCpu: "100m"
                         resourceRequestMemory: "128Mi"
                         resourceLimitCpu: "500m"
                         resourceLimitMemory: "512Mi"
+
                       - name: nodejs
                         image: "node:18-alpine"
                         ttyEnabled: true
@@ -76,12 +78,13 @@ controller:
                         resourceRequestMemory: "512Mi"
                         resourceLimitCpu: "1"
                         resourceLimitMemory: "1Gi"
+
                       - name: kaniko
                         image: "gcr.io/kaniko-project/executor:latest-debug"
                         ttyEnabled: true
                         alwaysPullImage: true
-                        command: ["cat"]
-                        args: []            # ← lista vacía permitida
+                        command: "cat"        # ← escalar
+                        # args eliminado o args: ""
                         securityContext:
                           runAsUser: 0
                         resourceRequestCpu: "500m"
@@ -92,6 +95,7 @@ controller:
                       - secretVolume:
                           mountPath: "/kaniko/.docker"
                           secretName: dockerhub-credentials
+
 
           credentials:
             system:
