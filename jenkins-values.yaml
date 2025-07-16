@@ -86,9 +86,6 @@ controller:
                         args: ""
                         securityContext:
                           runAsUser: 0
-                        volumeMounts:
-                          - name: jenkins-docker-cfg
-                            mountPath: "/kaniko/.docker"
                         resourceRequestCpu: "500m"
                         resourceRequestMemory: "1Gi"
                         resourceLimitCpu: "2"
