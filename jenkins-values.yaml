@@ -51,8 +51,9 @@ controller:
                 namespace: "jenkins"
                 serverUrl: "https://kubernetes.default"
                 skipTlsVerify: true
-                jenkinsUrl: "http://jenkins-jenkins:8080"
-                jenkinsTunnel: "jenkins-jenkins-agent:50000"
+                # IMPORTANTE: Corregidos los nombres de servicio para que coincidan con Helm Chart
+                jenkinsUrl: "http://jenkins-local-k3d:8080"
+                jenkinsTunnel: "jenkins-local-k3d-agent:50000"
                 containerCap: 10
                 connectTimeout: 5
                 readTimeout: 15
@@ -64,47 +65,55 @@ controller:
                     containers:
                       - name: jnlp
                         image: jenkins/inbound-agent:3309.v27b_9314fd1a_4-1
+                        # Recomendado usar estas variables para la conexión del agente
+                        args:
+                          - "${computer.jnlpmac}"
+                          - "${computer.name}"
                         ttyEnabled: true
                         resourceRequestCpu: "100m"
                         resourceRequestMemory: "128Mi"
+
                       - name: nodejs
                         image: node:18
-                        command: ["cat"]
+                        # Usar sleep infinity para mantener el contenedor ejecutándose como sidecar
+                        command: ["sleep"]
+                        args: ["infinity"]
                         ttyEnabled: true
+
                       - name: kaniko
                         image: gcr.io/kaniko-project/executor:latest
-                        command: ["/busybox/cat"]
-                        args: ["-"]
+                        # Usar sleep infinity para mantener el contenedor ejecutándose como sidecar
+                        command: ["sleep"]
+                        args: ["infinity"]
                         ttyEnabled: true
 
-        unclassified:
-          location:
-            adminAddress: "admin@jenkins.local"
-            url: "http://jenkins.local"
+          unclassified:
+            location:
+              adminAddress: "admin@jenkins.local"
+              url: "http://jenkins.local"
 
-        credentials:
-          system:
-            domainCredentials:
-              - domain: "global"
-                credentials:
-                  - usernamePassword: { 
-                      scope: GLOBAL, 
-                      id: "dockerhub-credentials", 
-                      username: "${DOCKERHUB_USERNAME}", 
-                      password: "${DOCKERHUB_TOKEN}", 
-                      description: "DockerHub Access Token for CI/CD" 
-                    }
-                  - usernamePassword: { 
-                      scope: GLOBAL, 
-                      id: "github-ci-token", 
-                      username: "dummy", 
-                      password: "${GITHUB_TOKEN}", 
-                      description: "GitHub PAT para GitOps" 
-                    }
+          credentials:
+            system:
+              domainCredentials:
+                - domain: "global"
+                  credentials:
+                    # Formato de mapeo YAML estándar para evitar "Item isn't a Mapping"
+                    - usernamePassword:
+                        scope: GLOBAL
+                        id: "dockerhub-credentials"
+                        username: "${DOCKERHUB_USERNAME}"
+                        password: "${DOCKERHUB_TOKEN}"
+                        description: "DockerHub Access Token for CI/CD"
+                    - usernamePassword:
+                        scope: GLOBAL
+                        id: "github-ci-token"
+                        username: "dummy" # Este username es solo un marcador de posición, el token es la clave
+                        password: "${GITHUB_TOKEN}"
+                        description: "GitHub PAT para GitOps"
 
   sidecars:
     configAutoReload:
-      enabled: false
+      enabled: false # Mantener en false para recarga manual o si no estás iterando rápidamente
 
   installPlugins:
     - kubernetes
