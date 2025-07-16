@@ -33,7 +33,17 @@ controller:
     configScripts:
       main: |
         jenkins:
-          # ... (otras configuraciones JCasC) ...
+          systemMessage: "Bienvenido a Jenkins"
+          securityRealm:
+            local:
+              allowsSignup: false
+              enableCaptcha: false
+              users:
+                - id: "${JENKINS_ADMIN_USER}"
+                  password: "${JENKINS_ADMIN_PASSWORD_HASH}"
+          authorizationStrategy:
+            loggedInUsersCanDoAnything:
+              allowAnonymousRead: false
           clouds:
             - kubernetes:
                 name: "kubernetes"
@@ -51,7 +61,6 @@ controller:
                     nodeUsageMode: "NORMAL"
                     idleMinutes: 1
                     containers:
-                      # Contenedor JNLP (agente de Jenkins) - Siempre necesario
                       - name: jnlp
                         image: "jenkins/inbound-agent:3107.v665000b_51092-10"
                         args: "${computer.jnlpmac} ${computer.name}"
@@ -60,22 +69,25 @@ controller:
                         resourceRequestMemory: "128Mi"
                         resourceLimitCpu: "500m"
                         resourceLimitMemory: "512Mi"
-                      # ✅ NUEVO CONTENEDOR: nodejs
                       - name: nodejs
-                        image: "node:18-alpine" # O la versión de Node.js que necesites
+                        image: "node:18-alpine"
+                        imagePullPolicy: IfNotPresent # Added for clarity
                         ttyEnabled: true
                         resourceRequestCpu: "200m"
                         resourceRequestMemory: "512Mi"
                         resourceLimitCpu: "1"
                         resourceLimitMemory: "1Gi"
-                      # ✅ NUEVO CONTENEDOR: kaniko
                       - name: kaniko
-                        image: "gcr.io/kaniko-project/executor:latest-debug" # 'debug' es útil para depuración
+                        image: "gcr.io/kaniko-project/executor:latest-debug"
+                        imagePullPolicy: Always # Ensure latest Kaniko is pulled
                         ttyEnabled: true
-                        command: ["cat"] # Kaniko necesita un comando que mantenga el contenedor vivo
+                        command: ["cat"]
                         args: []
                         securityContext:
-                          runAsUser: 0 # Kaniko a menudo necesita ejecutarse como root
+                          runAsUser: 0
+                          # Recommended: Add fsGroup to ensure volume permissions
+                          # runAsGroup: 0 # Might be needed depending on base image
+                          # fsGroup: 65532 # Often used for non-root users, but 0 for root in Kaniko is common
                         volumeMounts:
                           - name: jenkins-docker-cfg
                             mountPath: /kaniko/.docker
@@ -83,14 +95,34 @@ controller:
                         resourceRequestMemory: "1Gi"
                         resourceLimitCpu: "2"
                         resourceLimitMemory: "2Gi"
-                # ✅ NUEVO VOLUMEN: Para las credenciales de Docker de Kaniko
-                volumes:
+                volumes: # This 'volumes' block should be at the same indentation level as 'templates'
                   - name: jenkins-docker-cfg
                     secret:
-                      secretName: dockerhub-credentials # Este secret debe existir en el namespace jenkins
+                      secretName: dockerhub-credentials
                       items:
                         - key: config.json
                           path: config.json
+
+        unclassified:
+          location:
+            adminAddress: "admin@jenkins.local"
+            url: "http://jenkins.local"
+
+        credentials:
+          system:
+            domainCredentials:
+              - credentials:
+                  - usernamePassword:
+                      id: "dockerhub-credentials"
+                      username: "${DOCKERHUB_USERNAME}"
+                      password: "${DOCKERHUB_TOKEN}"
+                      description: "DockerHub Access Token for CI/CD"
+                  - usernamePassword:
+                      id: "github-ci-token"
+                      username: "dummy"
+                      password: "${GITHUB_TOKEN}"
+                      description: "GitHub Token for Push from Jenkins"
+
   sidecars:
     configAutoReload:
       enabled: false
