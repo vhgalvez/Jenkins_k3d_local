@@ -98,7 +98,6 @@ controller:
                           mountPath: "/kaniko/.docker"
                           secretName: dockerhub-credentials
 
-
           credentials:
             system:
               domainCredentials:
