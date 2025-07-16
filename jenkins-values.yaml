@@ -5,11 +5,13 @@ controller:
     tag: "2.518-jdk21"
     pullPolicy: IfNotPresent
 
+  ## ── Credenciales de admin ya creadas como Secret ──────────────────
   admin:
     existingSecret: jenkins-admin
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
+  ## ── Variables de entorno inyectadas desde Secrets ─────────────────
   containerEnv:
     - name: DOCKERHUB_USERNAME
       valueFrom:
@@ -27,13 +29,14 @@ controller:
           name: github-ci-token
           key: token
 
+  ## ── Jenkins Configuration as Code (solo lo básico) ────────────────
   JCasC:
     enabled: true
     defaultConfig: false
     configScripts:
       main: |
         jenkins:
-          systemMessage: "Bienvenido a Jenkins"
+          systemMessage: "Jenkins listo 🚀"
           securityRealm:
             local:
               allowsSignup: false
@@ -45,61 +48,36 @@ controller:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
 
-          clouds:
-            - kubernetes:
-                name: "kubernetes"
-                namespace: "jenkins"
-                serverUrl: "https://kubernetes.default"
-                skipTlsVerify: true
-                jenkinsUrl: "http://jenkins-local-k3d:8080"
-                jenkinsTunnel: "jenkins-local-k3d-agent:50000"
-                containerCap: 10
-                connectTimeout: 5
-                readTimeout: 15
-                # Comment out the entire templates section
-                # templates:
-                #   - name: "jenkins-agent"
-                #     label: "jenkins-agent"
-                #     nodeUsageMode: NORMAL
-                #     idleMinutes: 1
-                #     containers:
-                #       - name: jnlp
-                #         image: jenkins/inbound-agent:3309.v27b_9314fd1a_4-1
-                #         args:
-                #           - "jenkins-slave"
-                #         ttyEnabled: true
-                #         resourceRequestCpu: "100m"
-                #         resourceRequestMemory: "128Mi"
+        unclassified:
+          location:
+            url: "http://jenkins.local"
+            adminAddress: "admin@jenkins.local"
 
-          unclassified:
-            location:
-              adminAddress: "admin@jenkins.local"
-              url: "http://jenkins.local"
+        credentials:
+          system:
+            domainCredentials:
+              - domain: "global"
+                credentials:
+                  - usernamePassword:
+                      scope: GLOBAL
+                      id: "dockerhub-credentials"
+                      username: "${DOCKERHUB_USERNAME}"
+                      password: "${DOCKERHUB_TOKEN}"
+                      description: "DockerHub token para CI/CD"
+                  - usernamePassword:
+                      scope: GLOBAL
+                      id: "github-ci-token"
+                      username: "dummy"
+                      password: "${GITHUB_TOKEN}"
+                      description: "GitHub PAT para GitOps"
 
-          credentials:
-            system:
-              domainCredentials:
-                - domain: "global"
-                  credentials:
-                    - usernamePassword:
-                        scope: GLOBAL
-                        id: "dockerhub-credentials"
-                        username: "${DOCKERHUB_USERNAME}"
-                        password: "${DOCKERHUB_TOKEN}"
-                        description: "DockerHub Access Token for CI/CD"
-                    - usernamePassword:
-                        scope: GLOBAL
-                        id: "github-ci-token"
-                        username: "dummy"
-                        password: "${GITHUB_TOKEN}"
-                        description: "GitHub PAT para GitOps"
-
+  ## ── Desactiva sidecar de autoreload (no necesario) ────────────────
   sidecars:
     configAutoReload:
       enabled: false
 
+  ## ── Plugins mínimos; se quitó “kubernetes” ────────────────────────
   installPlugins:
-    - kubernetes
     - workflow-aggregator
     - git
     - docker-workflow
@@ -111,43 +89,41 @@ controller:
     - github-oauth
     - role-strategy
 
+  ## ── Health‑checks ─────────────────────────────────────────────────
   livenessProbe:
-    httpGet:
-      path: /login
-      port: 8080
+    httpGet: { path: /login, port: 8080 }
     initialDelaySeconds: 90
     periodSeconds: 10
     failureThreshold: 5
     timeoutSeconds: 5
 
   readinessProbe:
-    httpGet:
-      path: /login
-      port: 8080
+    httpGet: { path: /login, port: 8080 }
     initialDelaySeconds: 60
     periodSeconds: 10
     failureThreshold: 3
     timeoutSeconds: 5
 
   startupProbe:
-    httpGet:
-      path: /login
-      port: 8080
+    httpGet: { path: /login, port: 8080 }
     initialDelaySeconds: 120
     periodSeconds: 10
     failureThreshold: 18
     timeoutSeconds: 5
 
+  ## ── Contexto de seguridad ─────────────────────────────────────────
   securityContext:
     runAsUser: 1000
     runAsGroup: 1000
     fsGroup: 1000
 
+# ──────────── PVC para $JENKINS_HOME ─────────────────────────────────
 persistence:
   enabled: true
   storageClass: local-path
   size: 8Gi
 
+# ──────────── Service (solo UI + JNLP listener) ─────────────────────
 service:
   type: ClusterIP
   agentListenerPort: 50000
