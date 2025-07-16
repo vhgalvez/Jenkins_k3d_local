@@ -82,14 +82,13 @@ controller:
                         image: "gcr.io/kaniko-project/executor:latest-debug"
                         ttyEnabled: true
                         alwaysPullImage: true
-                        command:
-                          - cat
+                        command: ["cat"]
                         args: ""
                         securityContext:
                           runAsUser: 0
                         volumeMounts:
-                          - mountPath: "/kaniko/.docker"
-                            name: jenkins-docker-cfg
+                          - name: jenkins-docker-cfg
+                            mountPath: "/kaniko/.docker"
                         resourceRequestCpu: "500m"
                         resourceRequestMemory: "1Gi"
                         resourceLimitCpu: "2"
@@ -98,11 +97,6 @@ controller:
                       - name: jenkins-docker-cfg
                         secret:
                           secretName: dockerhub-credentials
-
-          unclassified:
-            location:
-              adminAddress: "admin@jenkins.local"
-              url: "http://jenkins.local"
 
           credentials:
             system:
@@ -120,6 +114,11 @@ controller:
                         username: "dummy"
                         password: "${GITHUB_TOKEN}"
                         description: "GitHub Token for Push from Jenkins"
+
+          unclassified:
+            location:
+              adminAddress: "admin@jenkins.local"
+              url: "http://jenkins.local"
 
   sidecars:
     configAutoReload:
