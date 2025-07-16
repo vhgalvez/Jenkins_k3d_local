@@ -1,4 +1,4 @@
-# ✅ jenkins-values.yaml – Mínimo JCasC para depuración
+# jenkins-values.yaml
 controller:
   image:
     repository: jenkins/jenkins
@@ -33,48 +33,69 @@ controller:
     configScripts:
       main: |
         jenkins:
-          systemMessage: "Jenkins listo 🚀"
-          # Temporarily remove securityRealm and authorizationStrategy for testing
-          # securityRealm:
-          #   local:
-          #     allowsSignup: false
-          #     enableCaptcha: false
-          #     users:
-          #       - id: "${JENKINS_ADMIN_USER}"
-          #         password: "${JENKINS_ADMIN_PASSWORD_HASH}"
-          # authorizationStrategy:
-          #   loggedInUsersCanDoAnything:
-          #     allowAnonymousRead: false
+          systemMessage: "Bienvenido a Jenkins"
+          securityRealm:
+            local:
+              allowsSignup: false
+              enableCaptcha: false
+              users:
+                - id: "${JENKINS_ADMIN_USER}"
+                  password: "${JENKINS_ADMIN_PASSWORD_HASH}"
+          authorizationStrategy:
+            loggedInUsersCanDoAnything:
+              allowAnonymousRead: false
+          clouds:
+            - kubernetes:
+                name: "kubernetes"
+                serverUrl: "https://kubernetes.default"
+                skipTlsVerify: true
+                namespace: "jenkins"
+                jenkinsUrl: "http://jenkins-jenkins:8080"
+                jenkinsTunnel: "jenkins-jenkins-agent:50000"
+                containerCap: 10
+                connectTimeout: 5
+                readTimeout: 15
+                templates:
+                  - name: "default"
+                    label: "jenkins-agent"
+                    nodeUsageMode: "NORMAL"
+                    idleMinutes: 1
+                    containers:
+                      - name: jnlp
+                        image: "jenkins/inbound-agent:3107.v665000b_51092-10"
+                        args: "${computer.jnlpmac} ${computer.name}"
+                        ttyEnabled: true
+                        resourceRequestCpu: "100m"
+                        resourceRequestMemory: "128Mi"
+                        resourceLimitCpu: "500m"
+                        resourceLimitMemory: "512Mi"
 
-        # Temporarily remove unclassified and credentials for testing
-        # unclassified:
-        #   location:
-        #     url: "http://jenkins.local"
-        #     adminAddress: "admin@jenkins.local"
+        unclassified:
+          location:
+            adminAddress: "admin@jenkins.local"
+            url: "http://jenkins.local"
 
-        # credentials:
-        #   system:
-        #     domainCredentials:
-        #       - domain: "global"
-        #         credentials:
-        #           - usernamePassword:
-        #               scope: GLOBAL
-        #               id: "dockerhub-credentials"
-        #               username: "${DOCKERHUB_USERNAME}"
-        #               password: "${DOCKERHUB_TOKEN}"
-        #               description: "DockerHub token para CI/CD"
-        #           - usernamePassword:
-        #               scope: GLOBAL
-        #               id: "github-ci-token"
-        #               username: "dummy"
-        #               password: "${GITHUB_TOKEN}"
-        #               description: "GitHub PAT para GitOps"
+        credentials:
+          system:
+            domainCredentials:
+              - credentials:
+                  - usernamePassword:
+                      id: "dockerhub-credentials"
+                      username: "${DOCKERHUB_USERNAME}"
+                      password: "${DOCKERHUB_TOKEN}"
+                      description: "DockerHub Access Token for CI/CD"
+                  - usernamePassword:
+                      id: "github-ci-token"
+                      username: "dummy"
+                      password: "${GITHUB_TOKEN}"
+                      description: "GitHub Token for Push from Jenkins"
 
   sidecars:
     configAutoReload:
       enabled: false
 
   installPlugins:
+    - kubernetes
     - workflow-aggregator
     - git
     - docker-workflow
@@ -87,21 +108,27 @@ controller:
     - role-strategy
 
   livenessProbe:
-    httpGet: { path: /login, port: 8080 }
+    httpGet:
+      path: /login
+      port: 8080
     initialDelaySeconds: 90
     periodSeconds: 10
     failureThreshold: 5
     timeoutSeconds: 5
 
   readinessProbe:
-    httpGet: { path: /login, port: 8080 }
+    httpGet:
+      path: /login
+      port: 8080
     initialDelaySeconds: 60
     periodSeconds: 10
     failureThreshold: 3
     timeoutSeconds: 5
 
   startupProbe:
-    httpGet: { path: /login, port: 8080 }
+    httpGet:
+      path: /login
+      port: 8080
     initialDelaySeconds: 120
     periodSeconds: 10
     failureThreshold: 18
