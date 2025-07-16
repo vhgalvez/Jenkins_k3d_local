@@ -26,7 +26,7 @@ controller:
           name: github-ci-token
           key: token
 
-  JCasC:
+    JCasC:
     enabled: true
     defaultConfig: false
     configScripts:
@@ -63,7 +63,7 @@ controller:
                     containers:
                       - name: jnlp
                         image: "jenkins/inbound-agent:3107.v665000b_51092-10"
-                        args: "${computer.jnlpmac} ${computer.name}"   # <- cadena
+                        args: ""
                         ttyEnabled: true
                         resourceRequestCpu: "100m"
                         resourceRequestMemory: "128Mi"
@@ -83,8 +83,8 @@ controller:
                         image: "gcr.io/kaniko-project/executor:latest-debug"
                         ttyEnabled: true
                         alwaysPullImage: true
-                        command: "/kaniko/executor"   # <- cadena
-                        args: "--help"                # <- cadena
+                        command: ["/kaniko/executor"]
+                        args: ["--help"]
                         resourceRequestCpu: "500m"
                         resourceRequestMemory: "1Gi"
                         resourceLimitCpu: "2"
@@ -94,27 +94,27 @@ controller:
                           mountPath: "/kaniko/.docker"
                           secretName: dockerhub-credentials
 
-          credentials:
-            system:
-              domainCredentials:
-                - credentials:
-                    - usernamePassword:
-                        scope: GLOBAL
-                        id: dockerhub-credentials
-                        username: "${DOCKERHUB_USERNAME}"
-                        password: "${DOCKERHUB_TOKEN}"
-                        description: "DockerHub Access Token for CI/CD"
-                    - usernamePassword:
-                        scope: GLOBAL
-                        id: github-ci-token
-                        username: dummy
-                        password: "${GITHUB_TOKEN}"
-                        description: "GitHub Token for Push from Jenkins"
+        credentials:
+          system:
+            domainCredentials:
+              - credentials:
+                  - usernamePassword:
+                      scope: GLOBAL
+                      id: dockerhub-credentials
+                      username: "${DOCKERHUB_USERNAME}"
+                      password: "${DOCKERHUB_TOKEN}"
+                      description: "DockerHub Access Token for CI/CD"
+                  - usernamePassword:
+                      scope: GLOBAL
+                      id: github-ci-token
+                      username: dummy
+                      password: "${GITHUB_TOKEN}"
+                      description: "GitHub Token for Push from Jenkins"
 
-          unclassified:
-            location:
-              adminAddress: "admin@jenkins.local"
-              url: "http://jenkins.local"
+        unclassified:
+          location:
+            adminAddress: "admin@jenkins.local"
+            url: "http://jenkins.local"
 
   sidecars:
     configAutoReload:
