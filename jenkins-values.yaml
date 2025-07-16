@@ -1,3 +1,4 @@
+# jenkins-values.yaml
 controller:
   image:
     repository: jenkins/jenkins
@@ -43,6 +44,7 @@ controller:
           authorizationStrategy:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
+
           clouds:
             - kubernetes:
                 name: "kubernetes"
@@ -62,11 +64,9 @@ controller:
                     containers:
                       - name: jnlp
                         image: "jenkins/inbound-agent:3107.v665000b_51092-10"
-                        # --- FIX START ---
                         args:
                           - "${computer.jnlpmac}"
                           - "${computer.name}"
-                        # --- FIX END ---
                         ttyEnabled: true
                         resourceRequestCpu: "100m"
                         resourceRequestMemory: "128Mi"
@@ -111,7 +111,8 @@ controller:
           credentials:
             system:
               domainCredentials:
-                - credentials:
+                - domain: "global"
+                  credentials:
                     - usernamePassword:
                         id: "dockerhub-credentials"
                         username: "${DOCKERHUB_USERNAME}"
