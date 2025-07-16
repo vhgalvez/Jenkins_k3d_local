@@ -59,7 +59,7 @@ controller:
                 templates:
                   - name: "default"
                     label: "jenkins-agent"
-                    nodeUsageMode: "NORMAL"
+                    nodeUsageMode: NORMAL
                     idleMinutes: 1
                     containers:
                       - name: jnlp
@@ -82,13 +82,14 @@ controller:
                         image: "gcr.io/kaniko-project/executor:latest-debug"
                         ttyEnabled: true
                         alwaysPullImage: true
-                        command: ["cat"]
+                        command:
+                          - cat
                         args: ""
                         securityContext:
                           runAsUser: 0
                         volumeMounts:
-                          - name: jenkins-docker-cfg
-                            mountPath: "/kaniko/.docker"
+                          - mountPath: "/kaniko/.docker"
+                            name: jenkins-docker-cfg
                         resourceRequestCpu: "500m"
                         resourceRequestMemory: "1Gi"
                         resourceLimitCpu: "2"
@@ -97,7 +98,6 @@ controller:
                       - name: jenkins-docker-cfg
                         secret:
                           secretName: dockerhub-credentials
-
 
           unclassified:
             location:
