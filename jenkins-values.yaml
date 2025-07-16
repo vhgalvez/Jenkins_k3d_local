@@ -1,4 +1,5 @@
 # jenkins-values.yaml
+# jenkins-values.yaml
 controller:
   image:
     repository: jenkins/jenkins
@@ -51,8 +52,8 @@ controller:
                 namespace: "jenkins"
                 serverUrl: "https://kubernetes.default"
                 skipTlsVerify: true
-                jenkinsUrl: "http://jenkins-local-k3d:8080" # Corrected
-                jenkinsTunnel: "jenkins-local-k3d-agent:50000" # Corrected
+                jenkinsUrl: "http://jenkins-local-k3d:8080"
+                jenkinsTunnel: "jenkins-local-k3d-agent:50000"
                 containerCap: 10
                 connectTimeout: 5
                 readTimeout: 15
@@ -64,24 +65,25 @@ controller:
                     containers:
                       - name: jnlp
                         image: jenkins/inbound-agent:3309.v27b_9314fd1a_4-1
-                        args: # Recommended JCasC format for agent args
-                          - "${computer.jnlpmac}"
-                          - "${computer.name}"
+                        # Simplified args for testing if this is the scalar issue
+                        args:
+                          - "jenkins-slave" # A single, simple scalar for testing
                         ttyEnabled: true
                         resourceRequestCpu: "100m"
                         resourceRequestMemory: "128Mi"
 
-                      - name: nodejs
-                        image: node:18
-                        command: ["sleep"] # Use sleep infinity to keep sidecar running
-                        args: ["infinity"]
-                        ttyEnabled: true
+                      # Temporarily comment out sidecar containers for debugging
+                      # - name: nodejs
+                      #   image: node:18
+                      #   command: ["sleep"]
+                      #   args: ["infinity"]
+                      #   ttyEnabled: true
 
-                      - name: kaniko
-                        image: gcr.io/kaniko-project/executor:latest
-                        command: ["sleep"] # Use sleep infinity to keep sidecar running
-                        args: ["infinity"]
-                        ttyEnabled: true
+                      # - name: kaniko
+                      #   image: gcr.io/kaniko-project/executor:latest
+                      #   command: ["sleep"]
+                      #   args: ["infinity"]
+                      #   ttyEnabled: true
 
           unclassified:
             location:
@@ -93,7 +95,6 @@ controller:
               domainCredentials:
                 - domain: "global"
                   credentials:
-                    # Corrected block-style YAML for credentials (no flow-style {})
                     - usernamePassword:
                         scope: GLOBAL
                         id: "dockerhub-credentials"
