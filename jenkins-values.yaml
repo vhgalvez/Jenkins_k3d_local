@@ -1,4 +1,3 @@
-# jenkins-values.yaml
 controller:
   image:
     repository: jenkins/jenkins
@@ -63,7 +62,11 @@ controller:
                     containers:
                       - name: jnlp
                         image: "jenkins/inbound-agent:3107.v665000b_51092-10"
-                        args: "${computer.jnlpmac} ${computer.name}"
+                        # --- FIX START ---
+                        args:
+                          - "${computer.jnlpmac}"
+                          - "${computer.name}"
+                        # --- FIX END ---
                         ttyEnabled: true
                         resourceRequestCpu: "100m"
                         resourceRequestMemory: "128Mi"
@@ -71,7 +74,7 @@ controller:
                         resourceLimitMemory: "512Mi"
                       - name: nodejs
                         image: "node:18-alpine"
-                        alwaysPullImage: false # Corregido: "IfNotPresent" se mapea a false
+                        alwaysPullImage: false
                         ttyEnabled: true
                         resourceRequestCpu: "200m"
                         resourceRequestMemory: "512Mi"
@@ -79,17 +82,15 @@ controller:
                         resourceLimitMemory: "1Gi"
                       - name: kaniko
                         image: "gcr.io/kaniko-project/executor:latest-debug"
-                        alwaysPullImage: true # Corregido: "Always" se mapea a true
+                        alwaysPullImage: true
                         ttyEnabled: true
                         command: ["cat"]
                         args: []
                         securityContext:
                           runAsUser: 0
-                          # runAsGroup: 0 # Comentado, si no es estrictamente necesario
-                          # fsGroup: 65532 # Comentado, si no es estrictamente necesario
                         volumeMounts:
                           - name: jenkins-docker-cfg
-                            mountPath: "/kaniko/.docker" # Asegúrate de que este path sea correcto para Kaniko
+                            mountPath: "/kaniko/.docker"
                         resourceRequestCpu: "500m"
                         resourceRequestMemory: "1Gi"
                         resourceLimitCpu: "2"
@@ -102,25 +103,25 @@ controller:
                         - key: config.json
                           path: config.json
 
-        unclassified:
-          location:
-            adminAddress: "admin@jenkins.local"
-            url: "http://jenkins.local"
+          unclassified:
+            location:
+              adminAddress: "admin@jenkins.local"
+              url: "http://jenkins.local"
 
-        credentials:
-          system:
-            domainCredentials:
-              - credentials:
-                  - usernamePassword:
-                      id: "dockerhub-credentials"
-                      username: "${DOCKERHUB_USERNAME}"
-                      password: "${DOCKERHUB_TOKEN}"
-                      description: "DockerHub Access Token for CI/CD"
-                  - usernamePassword:
-                      id: "github-ci-token"
-                      username: "dummy"
-                      password: "${GITHUB_TOKEN}"
-                      description: "GitHub Token for Push from Jenkins"
+          credentials:
+            system:
+              domainCredentials:
+                - credentials:
+                    - usernamePassword:
+                        id: "dockerhub-credentials"
+                        username: "${DOCKERHUB_USERNAME}"
+                        password: "${DOCKERHUB_TOKEN}"
+                        description: "DockerHub Access Token for CI/CD"
+                    - usernamePassword:
+                        id: "github-ci-token"
+                        username: "dummy"
+                        password: "${GITHUB_TOKEN}"
+                        description: "GitHub Token for Push from Jenkins"
 
   sidecars:
     configAutoReload:
