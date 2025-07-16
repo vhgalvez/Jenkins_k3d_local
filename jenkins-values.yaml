@@ -64,9 +64,7 @@ controller:
                     containers:
                       - name: jnlp
                         image: "jenkins/inbound-agent:3107.v665000b_51092-10"
-                        args:
-                          - "${computer.jnlpmac}"
-                          - "${computer.name}"
+                        args: "${computer.jnlpmac} ${computer.name}"
                         ttyEnabled: true
                         resourceRequestCpu: "100m"
                         resourceRequestMemory: "128Mi"
