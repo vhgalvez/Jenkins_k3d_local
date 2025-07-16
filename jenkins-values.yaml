@@ -72,18 +72,18 @@ controller:
                         resourceLimitMemory: "512Mi"
                       - name: nodejs
                         image: "node:18-alpine"
-                        alwaysPullImage: false
                         ttyEnabled: true
+                        alwaysPullImage: false
                         resourceRequestCpu: "200m"
                         resourceRequestMemory: "512Mi"
                         resourceLimitCpu: "1"
                         resourceLimitMemory: "1Gi"
                       - name: kaniko
                         image: "gcr.io/kaniko-project/executor:latest-debug"
-                        alwaysPullImage: true
                         ttyEnabled: true
+                        alwaysPullImage: true
                         command: ["cat"]
-                        args: []
+                        args: ""
                         securityContext:
                           runAsUser: 0
                         volumeMounts:
@@ -93,13 +93,11 @@ controller:
                         resourceRequestMemory: "1Gi"
                         resourceLimitCpu: "2"
                         resourceLimitMemory: "2Gi"
-                volumes:
-                  - name: jenkins-docker-cfg
-                    secret:
-                      secretName: dockerhub-credentials
-                      items:
-                        - key: config.json
-                          path: config.json
+                    volumes:
+                      - name: jenkins-docker-cfg
+                        secret:
+                          secretName: dockerhub-credentials
+
 
           unclassified:
             location:
