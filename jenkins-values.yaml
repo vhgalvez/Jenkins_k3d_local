@@ -61,10 +61,13 @@ controller:
                     nodeUsageMode: NORMAL
                     idleMinutes: 1
                     volumes:
-                      - mountPath: "/kaniko/.docker"
-                        name: docker-config
-                        secret:
+                      # Corregido: Usar la sintaxis 'name' y 'secret' para el volumen
+                      - name: docker-config # Nombre del volumen
+                        secret: # Tipo de volumen
                           secretName: dockerhub-credentials
+                          items: # Especifica los archivos del secreto a montar
+                            - key: config.json # Clave del secreto
+                              path: config.json # Ruta dentro del mountPath
                     containers:
                       - name: jnlp
                         image: jenkins/inbound-agent:3107.v665000b_51092-10
@@ -95,6 +98,10 @@ controller:
                         envVars:
                           - key: DOCKER_CONFIG
                             value: /kaniko/.docker/
+                        volumeMounts:
+                          # Corregido: Referenciar el volumen por su nombre
+                          - name: docker-config # Debe coincidir con el 'name' del volumen definido arriba
+                            mountPath: "/kaniko/.docker"
                         resourceRequestCpu: "250m"
                         resourceRequestMemory: "512Mi"
                         resourceLimitCpu: "1"
