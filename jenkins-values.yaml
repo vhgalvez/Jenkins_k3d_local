@@ -1,4 +1,5 @@
 # jenkins-values.yaml – Configuración completa y funcional para laboratorio k3d/k3s
+# jenkins-values.yaml – Configuración para depuración (envVars eliminados)
 controller:
   image:
     repository: jenkins/jenkins
@@ -78,10 +79,10 @@ controller:
                         image: node:18-alpine # Imagen de Node.js
                         command: "cat" # Comando para mantener el contenedor vivo
                         ttyEnabled: true # Habilitar TTY
-                        envVars: # CORREGIDO: Usar 'literalEnvVar' para variables de entorno literales
-                          - literalEnvVar:
-                              key: NODE_ENV
-                              value: production
+                        # envVars: # ELIMINADO TEMPORALMENTE PARA DEPURACIÓN
+                        #   - literalEnvVar:
+                        #       key: NODE_ENV
+                        #       value: production
                         resourceRequestCpu: "100m"
                         resourceRequestMemory: "256Mi"
                         resourceLimitCpu: "500m"
@@ -92,10 +93,10 @@ controller:
                         command: "/kaniko/executor" # Comando de entrada de Kaniko
                         args: "--help" # Argumentos de entrada de Kaniko (se sobrescribirán en el Jenkinsfile)
                         ttyEnabled: true # Habilitar TTY
-                        envVars: # CORREGIDO: Usar 'literalEnvVar' para variables de entorno literales
-                          - literalEnvVar:
-                              key: DOCKER_CONFIG
-                              value: /kaniko/.docker/ # Ruta para el config.json de Docker
+                        # envVars: # ELIMINADO TEMPORALMENTE PARA DEPURACIÓN
+                        #   - literalEnvVar:
+                        #       key: DOCKER_CONFIG
+                        #       value: /kaniko/.docker/ # Ruta para el config.json de Docker
                         volumeMounts:
                           - name: docker-config # Nombre del volumen a montar (debe coincidir con el definido en 'volumes')
                             mountPath: "/kaniko/.docker" # Ruta dentro del contenedor donde se montará
