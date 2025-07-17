@@ -1,4 +1,5 @@
 # jenkins-values.yaml – Configuración completa y funcional para laboratorio k3d/k3s
+# jenkins-values.yaml – Configuración completa y funcional para laboratorio k3d/k3s
 controller:
   image:
     repository: jenkins/jenkins
@@ -78,8 +79,8 @@ controller:
                         image: node:18-alpine # Imagen de Node.js
                         command: "cat" # Comando para mantener el contenedor vivo
                         ttyEnabled: true # Habilitar TTY
-                        envVars: # CORREGIDO: Variables de entorno específicas para este contenedor
-                          - env: # Usar 'env' como clave para cada variable de entorno
+                        envVars: # CORREGIDO: Usar 'literalEnvVar' para variables de entorno literales
+                          - literalEnvVar:
                               key: NODE_ENV
                               value: production
                         resourceRequestCpu: "100m"
@@ -92,8 +93,8 @@ controller:
                         command: "/kaniko/executor" # Comando de entrada de Kaniko
                         args: "--help" # Argumentos de entrada de Kaniko (se sobrescribirán en el Jenkinsfile)
                         ttyEnabled: true # Habilitar TTY
-                        envVars: # CORREGIDO: Variables de entorno específicas para este contenedor
-                          - env: # Usar 'env' como clave para cada variable de entorno
+                        envVars: # CORREGIDO: Usar 'literalEnvVar' para variables de entorno literales
+                          - literalEnvVar:
                               key: DOCKER_CONFIG
                               value: /kaniko/.docker/ # Ruta para el config.json de Docker
                         volumeMounts:
