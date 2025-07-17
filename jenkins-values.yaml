@@ -61,17 +61,15 @@ controller:
                     nodeUsageMode: NORMAL
                     idleMinutes: 1
                     volumes:
-                      # Corregido: Usar la sintaxis 'name' y 'secret' para el volumen
-                      - name: docker-config # Nombre del volumen
-                        secret: # Tipo de volumen
+                      # CORREGIDO: Sintaxis correcta para volumen de tipo 'secret' en JCasC
+                      - secretVolume:
+                          mountPath: "/kaniko/.docker"
                           secretName: dockerhub-credentials
-                          items: # Especifica los archivos del secreto a montar
-                            - key: config.json # Clave del secreto
-                              path: config.json # Ruta dentro del mountPath
                     containers:
                       - name: jnlp
                         image: jenkins/inbound-agent:3107.v665000b_51092-10
-                        args: ['$(JENKINS_SECRET)', '$(JENKINS_NAME)']
+                        # CORREGIDO: 'args' debe ser una cadena escalar para el plugin de Kubernetes de Jenkins
+                        args: '$(JENKINS_SECRET) $(JENKINS_NAME)'
                         ttyEnabled: true
                         resourceRequestCpu: "100m"
                         resourceRequestMemory: "128Mi"
@@ -80,7 +78,8 @@ controller:
 
                       - name: nodejs
                         image: node:18-alpine
-                        command: ["cat"]
+                        # CORREGIDO: 'command' debe ser una cadena escalar para el plugin de Kubernetes de Jenkins
+                        command: "cat" # Mantiene el contenedor vivo
                         ttyEnabled: true
                         envVars:
                           - key: NODE_ENV
@@ -92,15 +91,16 @@ controller:
 
                       - name: kaniko
                         image: gcr.io/kaniko-project/executor:v1.23.0-debug
-                        command: ["/kaniko/executor"]
-                        args: ["--help"]
+                        # CORREGIDO: 'command' y 'args' deben ser cadenas escalares para el plugin de Kubernetes de Jenkins
+                        command: "/kaniko/executor"
+                        args: "--help"
                         ttyEnabled: true
                         envVars:
                           - key: DOCKER_CONFIG
                             value: /kaniko/.docker/
                         volumeMounts:
-                          # Corregido: Referenciar el volumen por su nombre
-                          - name: docker-config # Debe coincidir con el 'name' del volumen definido arriba
+                          # El 'mountPath' debe coincidir con el 'mountPath' definido en el volumen
+                          - name: docker-config # Este 'name' no se usa si el volumen es 'secretVolume', pero es buena práctica mantenerlo si se usara el formato 'name: ... secret: ...'
                             mountPath: "/kaniko/.docker"
                         resourceRequestCpu: "250m"
                         resourceRequestMemory: "512Mi"
