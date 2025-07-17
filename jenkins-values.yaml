@@ -6,9 +6,9 @@ controller:
 
   # ──────────────── 1) Credenciales de administrador ────────────────
   admin:
-    existingSecret: jenkins-admin          # kubectl create secret …
-    userKey:  jenkins-admin-user           # → admin
-    passwordKey: jenkins-admin-password    # → admin  (usa hash en prod)
+    existingSecret: jenkins-admin # kubectl create secret …
+    userKey: jenkins-admin-user # → admin
+    passwordKey: jenkins-admin-password # → admin  (usa hash en prod)
 
   # ──────────────── 2) Variables de entorno para el contenedor master ────────────────
   containerEnv:
@@ -148,7 +148,7 @@ controller:
 
   sidecars:
     configAutoReload:
-      enabled: false       # activalo si quieres autoreload de JCasC
+      enabled: false # activalo si quieres autoreload de JCasC
 
 # ──────────────── 5) Persistencia mínima local-path (k3d/k3s) ──────
 persistence:
