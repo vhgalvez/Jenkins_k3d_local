@@ -1,87 +1,89 @@
-# jenkins-values.yaml  –  listo para k3d/k3s laboratorio
+# jenkins-values.yaml – Configuración completa y funcional para laboratorio k3d/k3s
 controller:
   image:
     repository: jenkins/jenkins
-    tag: "2.518-jdk21"
+    tag: "2.518-jdk21" # Versión de Jenkins con JDK 21
 
   admin:
-    existingSecret: jenkins-admin
-    userKey: jenkins-admin-user
-    passwordKey: jenkins-admin-password
+    existingSecret: jenkins-admin # Nombre del secreto de Kubernetes para credenciales de administrador
+    userKey: jenkins-admin-user # Clave dentro del secreto para el nombre de usuario
+    passwordKey: jenkins-admin-password # Clave dentro del secreto para la contraseña
 
-  containerEnv:
+  containerEnv: # Variables de entorno para el contenedor principal de Jenkins
     - name: DOCKERHUB_USERNAME
       valueFrom:
         secretKeyRef:
-          name: dockerhub-credentials
-          key: username
+          name: dockerhub-credentials # Secreto de DockerHub
+          key: username # Clave para el nombre de usuario
     - name: DOCKERHUB_TOKEN
       valueFrom:
         secretKeyRef:
-          name: dockerhub-credentials
-          key: password
+          name: dockerhub-credentials # Secreto de DockerHub
+          key: password # Clave para el token/contraseña
     - name: GITHUB_TOKEN
       valueFrom:
         secretKeyRef:
-          name: github-ci-token
-          key: token
+          name: github-ci-token # Secreto de GitHub
+          key: token # Clave para el token de GitHub
 
-  JCasC:
+  JCasC: # Configuración de Jenkins como Código (JCasC)
     enabled: true
-    defaultConfig: false
+    defaultConfig: false # No usar la configuración por defecto de JCasC
     configScripts:
-      main: |
+      main: | # Script principal de configuración de Jenkins
         jenkins:
-          systemMessage: "Bienvenido a Jenkins en Kubernetes 😎"
+          systemMessage: "Bienvenido a Jenkins en Kubernetes 😎" # Mensaje de bienvenida en la UI de Jenkins
           securityRealm:
-            local:
-              allowsSignup: false
-              enableCaptcha: false
+            local: # Configuración de seguridad local
+              allowsSignup: false # Deshabilitar el registro de nuevos usuarios
+              enableCaptcha: false # Deshabilitar Captcha
               users:
-                - id: "admin"
-                  password: "admin"
+                - id: "admin" # Usuario administrador (se recomienda usar variables de entorno/secretos para esto en producción)
+                  password: "admin" # Contraseña del administrador (se recomienda usar variables de entorno/secretos para esto en producción)
           authorizationStrategy:
-            loggedInUsersCanDoAnything:
-              allowAnonymousRead: false
+            loggedInUsersCanDoAnything: # Estrategia de autorización: usuarios logueados pueden hacer todo
+              allowAnonymousRead: false # Deshabilitar lectura anónima
 
           clouds:
-            - kubernetes:
-                name: "kubernetes"
-                serverUrl: "https://kubernetes.default"
-                skipTlsVerify: true
-                namespace: "jenkins"
-                jenkinsUrl: "http://jenkins-local-k3d:8080"
-                jenkinsTunnel: "jenkins-local-k3d-agent:50000"
-                containerCap: 10
-                connectTimeout: 5
-                readTimeout: 15
+            - kubernetes: # Configuración del plugin de Kubernetes
+                name: "kubernetes" # Nombre de la nube de Kubernetes en Jenkins
+                serverUrl: "https://kubernetes.default" # URL del servidor de la API de Kubernetes (in-cluster)
+                skipTlsVerify: true # Saltarse la verificación TLS (útil para entornos de desarrollo/k3d)
+                namespace: "jenkins" # Namespace donde se crearán los pods de agentes
+                jenkinsUrl: "http://jenkins-local-k3d:8080" # URL del controlador de Jenkins
+                jenkinsTunnel: "jenkins-local-k3d-agent:50000" # URL del túnel para agentes (servicio de agente)
+                containerCap: 10 # Número máximo de contenedores que se pueden lanzar
+                connectTimeout: 5 # Tiempo de espera para conectar con el agente
+                readTimeout: 15 # Tiempo de espera para leer del agente
                 templates:
-                  - name: "jenkins-agent"
-                    label: "jenkins-agent"
-                    nodeUsageMode: NORMAL
-                    idleMinutes: 1
+                  - name: "jenkins-agent" # Nombre de la plantilla de pod
+                    label: "jenkins-agent" # Etiqueta para asociar con la plantilla (usada en Jenkinsfile)
+                    nodeUsageMode: NORMAL # Modo de uso del nodo
+                    idleMinutes: 1 # Minutos de inactividad antes de terminar el pod
                     volumes:
                       # CORREGIDO: Sintaxis correcta para volumen de tipo 'secret' en JCasC
                       - secretVolume:
-                          mountPath: "/kaniko/.docker"
-                          secretName: dockerhub-credentials
+                          mountPath: "/kaniko/.docker" # Ruta donde se montará el secreto dentro del pod
+                          secretName: dockerhub-credentials # Nombre del secreto de Kubernetes
                     containers:
-                      - name: jnlp
-                        image: jenkins/inbound-agent:3107.v665000b_51092-10
+                      - name: jnlp # Contenedor principal del agente JNLP
+                        image: jenkins/inbound-agent:3107.v665000b_51092-10 # Imagen del agente JNLP
                         # CORREGIDO: 'args' debe ser una cadena escalar para el plugin de Kubernetes de Jenkins
+                        # El plugin de Kubernetes inyecta automáticamente los argumentos necesarios.
+                        # Aquí se usa la forma de CasC para referenciar variables de Jenkins (aunque a menudo no es necesario para jnlp)
                         args: '$(JENKINS_SECRET) $(JENKINS_NAME)'
-                        ttyEnabled: true
-                        resourceRequestCpu: "100m"
-                        resourceRequestMemory: "128Mi"
-                        resourceLimitCpu: "500m"
-                        resourceLimitMemory: "512Mi"
+                        ttyEnabled: true # Habilitar TTY
+                        resourceRequestCpu: "100m" # Solicitud de CPU
+                        resourceRequestMemory: "128Mi" # Solicitud de memoria
+                        resourceLimitCpu: "500m" # Límite de CPU
+                        resourceLimitMemory: "512Mi" # Límite de memoria
 
-                      - name: nodejs
-                        image: node:18-alpine
+                      - name: nodejs # Contenedor secundario para Node.js
+                        image: node:18-alpine # Imagen de Node.js
                         # CORREGIDO: 'command' debe ser una cadena escalar para el plugin de Kubernetes de Jenkins
-                        command: "cat" # Mantiene el contenedor vivo
-                        ttyEnabled: true
-                        envVars:
+                        command: "cat" # Comando para mantener el contenedor vivo
+                        ttyEnabled: true # Habilitar TTY
+                        envVars: # Variables de entorno específicas para este contenedor
                           - key: NODE_ENV
                             value: production
                         resourceRequestCpu: "100m"
@@ -89,46 +91,46 @@ controller:
                         resourceLimitCpu: "500m"
                         resourceLimitMemory: "512Mi"
 
-                      - name: kaniko
-                        image: gcr.io/kaniko-project/executor:v1.23.0-debug
+                      - name: kaniko # Contenedor secundario para Kaniko (construcción de imágenes Docker)
+                        image: gcr.io/kaniko-project/executor:v1.23.0-debug # Imagen de Kaniko
                         # CORREGIDO: 'command' y 'args' deben ser cadenas escalares para el plugin de Kubernetes de Jenkins
-                        command: "/kaniko/executor"
-                        args: "--help"
-                        ttyEnabled: true
-                        envVars:
+                        command: "/kaniko/executor" # Comando de entrada de Kaniko
+                        args: "--help" # Argumentos de entrada de Kaniko (se sobrescribirán en el Jenkinsfile)
+                        ttyEnabled: true # Habilitar TTY
+                        envVars: # Variables de entorno específicas para este contenedor
                           - key: DOCKER_CONFIG
-                            value: /kaniko/.docker/
+                            value: /kaniko/.docker/ # Ruta para el config.json de Docker
                         volumeMounts:
-                          # El 'mountPath' debe coincidir con el 'mountPath' definido en el volumen
-                          - name: docker-config # Este 'name' no se usa si el volumen es 'secretVolume', pero es buena práctica mantenerlo si se usara el formato 'name: ... secret: ...'
-                            mountPath: "/kaniko/.docker"
+                          # Montar el volumen definido arriba en la ruta especificada
+                          - name: docker-config # Nombre del volumen a montar (debe coincidir con el definido en 'volumes')
+                            mountPath: "/kaniko/.docker" # Ruta dentro del contenedor donde se montará
                         resourceRequestCpu: "250m"
                         resourceRequestMemory: "512Mi"
                         resourceLimitCpu: "1"
                         resourceLimitMemory: "1536Mi"
 
-        credentials:
+        credentials: # Configuración de credenciales en Jenkins
           system:
             domainCredentials:
               - credentials:
-                  - usernamePassword:
-                      scope: GLOBAL
-                      id: dockerhub-credentials
-                      username: "${DOCKERHUB_USERNAME}"
-                      password: "${DOCKERHUB_TOKEN}"
+                  - usernamePassword: # Credencial de usuario/contraseña
+                      scope: GLOBAL # Alcance global
+                      id: dockerhub-credentials # ID de la credencial
+                      username: "${DOCKERHUB_USERNAME}" # Nombre de usuario de DockerHub (inyectado desde containerEnv)
+                      password: "${DOCKERHUB_TOKEN}" # Token de DockerHub (inyectado desde containerEnv)
                       description: "DockerHub Access Token for CI/CD"
-                  - string:
-                      scope: GLOBAL
-                      id: github-ci-token
-                      secret: "${GITHUB_TOKEN}"
+                  - string: # Credencial de tipo cadena secreta
+                      scope: GLOBAL # Alcance global
+                      id: github-ci-token # ID de la credencial
+                      secret: "${GITHUB_TOKEN}" # Token de GitHub (inyectado desde containerEnv)
                       description: "GitHub PAT para GitOps"
 
-        unclassified:
+        unclassified: # Configuración no clasificada (ej. URL de Jenkins)
           location:
-            adminAddress: "admin@jenkins.local"
-            url: "http://jenkins.local"
+            adminAddress: "admin@jenkins.local" # Dirección de correo del administrador
+            url: "http://jenkins.local" # URL pública de Jenkins
 
-  installPlugins:
+  installPlugins: # Lista de plugins a instalar en Jenkins
     - kubernetes
     - workflow-aggregator
     - git
@@ -141,11 +143,11 @@ controller:
     - github-oauth
     - role-strategy
 
-  sidecars:
+  sidecars: # Configuración de sidecars (contenedores adicionales)
     configAutoReload:
-      enabled: false
+      enabled: false # Deshabilitar recarga automática de configuración
 
-persistence:
-  enabled: true
-  storageClass: local-path
-  size: 8Gi
+persistence: # Configuración de persistencia para el volumen de Jenkins home
+  enabled: true # Habilitar persistencia
+  storageClass: local-path # Clase de almacenamiento (típicamente para k3d/k3s)
+  size: 8Gi # Tamaño del volumen persistente
