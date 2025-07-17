@@ -77,7 +77,7 @@ controller:
                     containers:
                       - name: jnlp
                         image: jenkins/inbound-agent:3107.v665000b_51092-10
-                        args: ["\$(JENKINS_SECRET)", "\$(JENKINS_NAME)"]
+                        args: ['$(JENKINS_SECRET)', '$(JENKINS_NAME)']
                         ttyEnabled: true
                         resourceRequestCpu: "100m"
                         resourceRequestMemory: "128Mi"
