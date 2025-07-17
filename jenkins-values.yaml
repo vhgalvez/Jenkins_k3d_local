@@ -61,16 +61,12 @@ controller:
                     nodeUsageMode: NORMAL # Modo de uso del nodo
                     idleMinutes: 1 # Minutos de inactividad antes de terminar el pod
                     volumes:
-                      # CORREGIDO: Sintaxis correcta para volumen de tipo 'secret' en JCasC
                       - secretVolume:
                           mountPath: "/kaniko/.docker" # Ruta donde se montará el secreto dentro del pod
                           secretName: dockerhub-credentials # Nombre del secreto de Kubernetes
                     containers:
                       - name: jnlp # Contenedor principal del agente JNLP
                         image: jenkins/inbound-agent:3107.v665000b_51092-10 # Imagen del agente JNLP
-                        # CORREGIDO: 'args' debe ser una cadena escalar para el plugin de Kubernetes de Jenkins
-                        # El plugin de Kubernetes inyecta automáticamente los argumentos necesarios.
-                        # Aquí se usa la forma de CasC para referenciar variables de Jenkins (aunque a menudo no es necesario para jnlp)
                         args: '$(JENKINS_SECRET) $(JENKINS_NAME)'
                         ttyEnabled: true # Habilitar TTY
                         resourceRequestCpu: "100m" # Solicitud de CPU
@@ -80,12 +76,12 @@ controller:
 
                       - name: nodejs # Contenedor secundario para Node.js
                         image: node:18-alpine # Imagen de Node.js
-                        # CORREGIDO: 'command' debe ser una cadena escalar para el plugin de Kubernetes de Jenkins
                         command: "cat" # Comando para mantener el contenedor vivo
                         ttyEnabled: true # Habilitar TTY
-                        envVars: # Variables de entorno específicas para este contenedor
-                          - key: NODE_ENV
-                            value: production
+                        envVars: # CORREGIDO: Variables de entorno específicas para este contenedor
+                          - env: # Usar 'env' como clave para cada variable de entorno
+                              key: NODE_ENV
+                              value: production
                         resourceRequestCpu: "100m"
                         resourceRequestMemory: "256Mi"
                         resourceLimitCpu: "500m"
@@ -93,15 +89,14 @@ controller:
 
                       - name: kaniko # Contenedor secundario para Kaniko (construcción de imágenes Docker)
                         image: gcr.io/kaniko-project/executor:v1.23.0-debug # Imagen de Kaniko
-                        # CORREGIDO: 'command' y 'args' deben ser cadenas escalares para el plugin de Kubernetes de Jenkins
                         command: "/kaniko/executor" # Comando de entrada de Kaniko
                         args: "--help" # Argumentos de entrada de Kaniko (se sobrescribirán en el Jenkinsfile)
                         ttyEnabled: true # Habilitar TTY
-                        envVars: # Variables de entorno específicas para este contenedor
-                          - key: DOCKER_CONFIG
-                            value: /kaniko/.docker/ # Ruta para el config.json de Docker
+                        envVars: # CORREGIDO: Variables de entorno específicas para este contenedor
+                          - env: # Usar 'env' como clave para cada variable de entorno
+                              key: DOCKER_CONFIG
+                              value: /kaniko/.docker/ # Ruta para el config.json de Docker
                         volumeMounts:
-                          # Montar el volumen definido arriba en la ruta especificada
                           - name: docker-config # Nombre del volumen a montar (debe coincidir con el definido en 'volumes')
                             mountPath: "/kaniko/.docker" # Ruta dentro del contenedor donde se montará
                         resourceRequestCpu: "250m"
