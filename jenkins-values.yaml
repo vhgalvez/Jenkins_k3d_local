@@ -38,7 +38,7 @@ controller:
               allowsSignup: false
               enableCaptcha: false
               users:
-                - id: "admin"
+                - id: "${JENKINS_ADMIN_USER}"
                   password: "${JENKINS_ADMIN_PASSWORD_HASH}"
           authorizationStrategy:
             loggedInUsersCanDoAnything:
@@ -82,14 +82,11 @@ controller:
                         resourceLimitMemory: "512Mi"
 
                       - name: kaniko
-                        image: "gcr.io/kaniko-project/executor:v1.23.0-debug"
+                        
                         ttyEnabled: true
                         alwaysPullImage: true
                         command: "/kaniko/executor"
                         args: "--help"
-                        envVars:
-                          - key: DOCKER_CONFIG
-                            value: /kaniko/.docker
                         resourceRequestCpu: "250m"
                         resourceRequestMemory: "512Mi"
                         resourceLimitCpu: "1"
