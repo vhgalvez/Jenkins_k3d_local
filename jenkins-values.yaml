@@ -4,13 +4,11 @@ controller:
     repository: jenkins/jenkins
     tag: "2.518-jdk21"
 
-  # ──────────────── 1) Credenciales de administrador ────────────────
   admin:
-    existingSecret: jenkins-admin # kubectl create secret …
-    userKey: jenkins-admin-user # → admin
-    passwordKey: jenkins-admin-password # → admin  (usa hash en prod)
+    existingSecret: jenkins-admin
+    userKey: jenkins-admin-user
+    passwordKey: jenkins-admin-password
 
-  # ──────────────── 2) Variables de entorno para el contenedor master ────────────────
   containerEnv:
     - name: DOCKERHUB_USERNAME
       valueFrom:
@@ -28,7 +26,6 @@ controller:
           name: github-ci-token
           key: token
 
-  # ──────────────── 3) Configuration-as-Code (JCasC) ────────────────
   JCasC:
     enabled: true
     defaultConfig: false
@@ -42,12 +39,11 @@ controller:
               enableCaptcha: false
               users:
                 - id: "admin"
-                  password: "admin"      # ⚠️ cámbialo a hash bcrypt en prod
+                  password: "admin"
           authorizationStrategy:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
 
-          ## ── 3a. Cloud: Kubernetes ────────────────────────────────
           clouds:
             - kubernetes:
                 name: "kubernetes"
@@ -59,21 +55,16 @@ controller:
                 containerCap: 10
                 connectTimeout: 5
                 readTimeout: 15
-
-                ## ► Plantilla única de agente (label = jenkins-agent)
                 templates:
                   - name: "jenkins-agent"
                     label: "jenkins-agent"
                     nodeUsageMode: NORMAL
                     idleMinutes: 1
-
-                    ## 3a-1) Volúmenes de POD (⚠️ *un* mapa por item)
                     volumes:
-                      - secretVolume:
+                      - mountPath: "/kaniko/.docker"
+                        name: docker-config
+                        secret:
                           secretName: dockerhub-credentials
-                          mountPath: "/kaniko/.docker"
-
-                    ## 3a-2) Contenedores que vivirán en el pod agente
                     containers:
                       - name: jnlp
                         image: jenkins/inbound-agent:3107.v665000b_51092-10
@@ -88,7 +79,7 @@ controller:
                         image: node:18-alpine
                         command: ["cat"]
                         ttyEnabled: true
-                        envVars:               # ← usa *envVars*, NO “env”
+                        envVars:
                           - key: NODE_ENV
                             value: production
                         resourceRequestCpu: "100m"
@@ -109,7 +100,6 @@ controller:
                         resourceLimitCpu: "1"
                         resourceLimitMemory: "1536Mi"
 
-        ## ── 3b. Credenciales globales ──────────────────────────────
         credentials:
           system:
             domainCredentials:
@@ -126,13 +116,11 @@ controller:
                       secret: "${GITHUB_TOKEN}"
                       description: "GitHub PAT para GitOps"
 
-        ## ── 3c. URL del sistema ────────────────────────────────────
         unclassified:
           location:
             adminAddress: "admin@jenkins.local"
             url: "http://jenkins.local"
 
-  # ──────────────── 4) Plugins útiles pre-instalados ────────────────
   installPlugins:
     - kubernetes
     - workflow-aggregator
@@ -148,9 +136,8 @@ controller:
 
   sidecars:
     configAutoReload:
-      enabled: false # activalo si quieres autoreload de JCasC
+      enabled: false
 
-# ──────────────── 5) Persistencia mínima local-path (k3d/k3s) ──────
 persistence:
   enabled: true
   storageClass: local-path
