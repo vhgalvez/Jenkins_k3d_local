@@ -82,7 +82,7 @@ controller:
                         resourceLimitMemory: "512Mi"
 
                       - name: kaniko
-                        
+                        image: "gcr.io/kaniko-project/executor:v1.23.0-debug"
                         ttyEnabled: true
                         alwaysPullImage: true
                         command: "/kaniko/executor"
