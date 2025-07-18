@@ -5,12 +5,13 @@ controller:
     tag: "2.518-jdk21"
     pullPolicy: IfNotPresent
 
+  # Usa secretos ya creados por tu script deploy_jenkins_env.sh
   admin:
     existingSecret: jenkins-admin
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
-  containerEnv:
+  containerEnv: # Se inyectan al contenedor Jenkins (puede ser útil para debugging o plugins)
     - name: DOCKERHUB_USERNAME
       valueFrom:
         secretKeyRef:
@@ -27,20 +28,32 @@ controller:
           name: github-ci-token
           key: token
 
+  envVars: # Esto es lo que JCasC usa para interpolar en el YAML
+    - name: JENKINS_ADMIN_USER
+      valueFrom:
+        secretKeyRef:
+          name: jenkins-admin
+          key: jenkins-admin-user
+    - name: JENKINS_ADMIN_PASSWORD_HASH
+      valueFrom:
+        secretKeyRef:
+          name: jenkins-admin
+          key: jenkins-admin-password
+
   JCasC:
     enabled: true
     defaultConfig: false
     configScripts:
       main: |
         jenkins:
-          systemMessage: "🚀 Jenkins en Kubernetes (K3d/K3s)"
+          systemMessage: "🚀 Jenkins sobre Kubernetes (K3d/K3s)"
           securityRealm:
             local:
               allowsSignup: false
               enableCaptcha: false
               users:
-                - id: "${secret://jenkins-admin/jenkins-admin-user}"
-                  password: "${secret://jenkins-admin/jenkins-admin-password}"
+                - id: "${JENKINS_ADMIN_USER}"
+                  password: "${JENKINS_ADMIN_PASSWORD_HASH}"
           authorizationStrategy:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
@@ -66,12 +79,12 @@ controller:
                       id: dockerhub-credentials
                       username: "${DOCKERHUB_USERNAME}"
                       password: "${DOCKERHUB_TOKEN}"
-                      description: "🔐 DockerHub CI"
+                      description: "🔐 DockerHub Token para Kaniko y pipelines"
                   - string:
                       scope: GLOBAL
                       id: github-ci-token
                       secret: "${GITHUB_TOKEN}"
-                      description: "🔐 GitHub PAT GitOps"
+                      description: "🔐 GitHub PAT para GitOps / Webhooks"
 
         unclassified:
           location:
