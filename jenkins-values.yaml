@@ -36,10 +36,7 @@ controller:
           securityRealm:
             local: # Configuración de seguridad local
               allowsSignup: false # Deshabilitar el registro de nuevos usuarios
-              enableCaptcha: false # Deshabilitar Captcha
-              # CORREGIDO: Eliminado el bloque 'users' para permitir que el Helm chart gestione el admin
-              # El Helm chart usará el secreto 'jenkins-admin' para configurar el usuario 'admin'
-              # con la contraseña de tu archivo .env (123456).
+              enableCaptcha: false # Deshabilitar Captcha             
           authorizationStrategy:
             loggedInUsersCanDoAnything: # Estrategia de autorización: usuarios logueados pueden hacer todo
               allowAnonymousRead: false # Deshabilitar lectura anónima
@@ -78,9 +75,9 @@ controller:
                         image: node:18-alpine # Imagen de Node.js
                         command: "cat" # Comando para mantener el contenedor vivo
                         ttyEnabled: true # Habilitar TTY
-                        envVars: # CORREGIDO: Sintaxis correcta para variables de entorno literales
-                          - key: NODE_ENV
-                            value: "production"
+                        # envVars: # ELIMINADO TEMPORALMENTE PARA DEPURACIÓN
+                        #   - key: NODE_ENV
+                        #     value: "production"
                         resourceRequestCpu: "100m"
                         resourceRequestMemory: "256Mi"
                         resourceLimitCpu: "500m"
@@ -91,9 +88,9 @@ controller:
                         command: "/kaniko/executor" # Comando de entrada de Kaniko
                         args: "--help" # Argumentos de entrada de Kaniko (se sobrescribirán en el Jenkinsfile)
                         ttyEnabled: true # Habilitar TTY
-                        envVars: # CORREGIDO: Sintaxis correcta para variables de entorno literales
-                          - key: DOCKER_CONFIG
-                            value: "/kaniko/.docker/" # Ruta para el config.json de Docker
+                        # envVars: # ELIMINADO TEMPORALMENTE PARA DEPURACIÓN
+                        #   - key: DOCKER_CONFIG
+                        #     value: "/kaniko/.docker/" # Ruta para el config.json de Docker
                         # volumeMounts: ELIMINADO - Se gestiona a nivel de 'volumes' del PodTemplate
                         resourceRequestCpu: "250m"
                         resourceRequestMemory: "512Mi"
