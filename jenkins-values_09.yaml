@@ -1,15 +1,30 @@
-# jenkins-values.yaml
+# jenkins-values.yaml – Configuración completa y funcional para laboratorio k3d/k3s
 controller:
   image:
     repository: jenkins/jenkins
     tag: "2.518-jdk21"
     pullPolicy: IfNotPresent
 
+  # Usa secretos creados por tu script .env -> Secret
   admin:
     existingSecret: jenkins-admin
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
+  # Variables de entorno para JCasC
+  envVars:
+    - name: JENKINS_ADMIN_USER
+      valueFrom:
+        secretKeyRef:
+          name: jenkins-admin
+          key: jenkins-admin-user
+    - name: JENKINS_ADMIN_PASSWORD_HASH
+      valueFrom:
+        secretKeyRef:
+          name: jenkins-admin
+          key: jenkins-admin-password
+
+  # Variables de entorno para el contenedor (opcional, útil para debugging)
   containerEnv:
     - name: DOCKERHUB_USERNAME
       valueFrom:
@@ -33,7 +48,7 @@ controller:
     configScripts:
       main: |
         jenkins:
-          systemMessage: "Bienvenido a Jenkins"
+          systemMessage: "🚀 Jenkins sobre K3d/K3s (DevOps Ready)"
           securityRealm:
             local:
               allowsSignup: false
@@ -44,21 +59,22 @@ controller:
           authorizationStrategy:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
+
           clouds:
             - kubernetes:
                 name: "kubernetes"
                 serverUrl: "https://kubernetes.default"
                 skipTlsVerify: true
                 namespace: "jenkins"
-                jenkinsUrl: "http://jenkins-jenkins:8080"
-                jenkinsTunnel: "jenkins-jenkins-agent:50000"
+                jenkinsUrl: "http://jenkins.jenkins:8080"
+                jenkinsTunnel: "jenkins-agent.jenkins:50000"
                 containerCap: 10
                 connectTimeout: 5
                 readTimeout: 15
                 templates:
-                  - name: "default"
-                    label: "jenkins-agent"
-                    nodeUsageMode: "NORMAL"
+                  - name: default
+                    label: jenkins-agent
+                    nodeUsageMode: NORMAL
                     idleMinutes: 1
                     containers:
                       - name: jnlp
@@ -70,29 +86,24 @@ controller:
                         resourceLimitCpu: "500m"
                         resourceLimitMemory: "512Mi"
 
-        unclassified:
-          location:
-            adminAddress: "admin@jenkins.local"
-            url: "http://jenkins.local"
-
         credentials:
           system:
             domainCredentials:
               - credentials:
                   - usernamePassword:
-                      id: "dockerhub-credentials"
+                      id: dockerhub-credentials
                       username: "${DOCKERHUB_USERNAME}"
                       password: "${DOCKERHUB_TOKEN}"
-                      description: "DockerHub Access Token for CI/CD"
-                  - usernamePassword:
-                      id: "github-ci-token"
-                      username: "dummy"
-                      password: "${GITHUB_TOKEN}"
-                      description: "GitHub Token for Push from Jenkins"
+                      description: "🔐 DockerHub CI"
+                  - string:
+                      id: github-ci-token
+                      secret: "${GITHUB_TOKEN}"
+                      description: "🔐 GitHub PAT"
 
-  sidecars:
-    configAutoReload:
-      enabled: false
+        unclassified:
+          location:
+            url: "http://jenkins.local"
+            adminAddress: "admin@example.com"
 
   installPlugins:
     - kubernetes
@@ -106,6 +117,11 @@ controller:
     - ssh-credentials
     - github-oauth
     - role-strategy
+    - pipeline-stage-view
+
+  sidecars:
+    configAutoReload:
+      enabled: false
 
   livenessProbe:
     httpGet:
