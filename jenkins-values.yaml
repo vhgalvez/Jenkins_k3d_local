@@ -96,9 +96,9 @@ controller:
                         #   - literalEnvVar:
                         #       key: DOCKER_CONFIG
                         #       value: /kaniko/.docker/ # Ruta para el config.json de Docker
-                        volumeMounts:
-                          - name: docker-config # Nombre del volumen a montar (debe coincidir con el definido en 'volumes')
-                            mountPath: "/kaniko/.docker" # Ruta dentro del contenedor donde se montará
+                        # volumeMounts: # ELIMINADO: No es un atributo directo de ContainerTemplate en JCasC
+                        #   - name: docker-config
+                        #     mountPath: "/kaniko/.docker"
                         resourceRequestCpu: "250m"
                         resourceRequestMemory: "512Mi"
                         resourceLimitCpu: "1"
