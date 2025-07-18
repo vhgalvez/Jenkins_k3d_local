@@ -5,7 +5,6 @@ controller:
     tag: "2.518-jdk21"
     pullPolicy: IfNotPresent
 
-  # Usa secretos creados por tu script .env -> Secret
   admin:
     existingSecret: jenkins-admin
     userKey: jenkins-admin-user
@@ -24,7 +23,7 @@ controller:
           name: jenkins-admin
           key: jenkins-admin-password
 
-  # Variables de entorno para el contenedor (opcional, útil para debugging)
+  # Variables opcionales para contenedor Jenkins (útiles para debugging o scripts)
   containerEnv:
     - name: DOCKERHUB_USERNAME
       valueFrom:
