@@ -54,8 +54,9 @@ controller:
                 containerCap: 10 # Número máximo de contenedores que se pueden lanzar
                 connectTimeout: 5 # Tiempo de espera para conectar con el agente
                 readTimeout: 15 # Tiempo de espera para leer del agente
-                # La sección 'templates' se ha movido al bloque 'agent' del Helm chart para una mejor gestión.
-                # No es necesario definir plantillas aquí si se usan las del Helm chart.
+                # La sección 'templates' ha sido movida y consolidada
+                # en el bloque 'agent' del Helm chart para una mejor gestión.
+                # No es necesario definir plantillas aquí.
 
         credentials: # Configuración de credenciales en Jenkins
           system:
@@ -101,48 +102,38 @@ persistence: # Configuración de persistencia para el volumen de Jenkins home
   size: 8Gi # Tamaño del volumen persistente
 
 agent: # Configuración de agentes Kubernetes a través de los valores del Helm chart
-  # Puedes especificar una imagen base para el agente JNLP si lo deseas,
-  # de lo contrario, el chart usará su valor por defecto.
-  # image: jenkins/inbound-agent
-  # tag: "3107.v665000b_51092-10" # Asegúrate de que esta versión coincida con lo que necesitas
+  # NUEVO: ponle label "default" a la plantilla que crea el chart
+  label: default
 
   # Definición de contenedores adicionales para los pods de agentes
   containers:
     - name: nodejs
       image: node:18-alpine
-      command: "cat" # Mantiene el contenedor vivo
+      command: ["cat"] # ← array, no string
       ttyEnabled: true
-      env: # Variables de entorno para este contenedor (sintaxis estándar de Kubernetes)
+      env:
         - name: NODE_ENV
           value: "production"
-      resources: # Solicitudes y límites de recursos
-        requests:
-          cpu: "100m"
-          memory: "256Mi"
-        limits:
-          cpu: "500m"
-          memory: "512Mi"
+      resources:
+        requests: { cpu: "100m", memory: "256Mi" }
+        limits: { cpu: "500m", memory: "512Mi" }
 
     - name: kaniko
       image: gcr.io/kaniko-project/executor:v1.23.0-debug
-      command: "/kaniko/executor" # Comando de entrada de Kaniko
-      args: "--help" # Argumentos de entrada de Kaniko (se sobrescribirán en el Jenkinsfile)
+      command: ["/kaniko/executor"] # ← array, no string
+      args: ["--help"] # ← array, no string
       ttyEnabled: true
-      env: # Variables de entorno para este contenedor
-        - name: DOCKER_CONFIG
-          value: "/kaniko/.docker/" # Ruta para el config.json de Docker
-      volumeMounts: # Montajes de volumen para este contenedor (sintaxis estándar de Kubernetes)
-        - name: docker-config # Debe coincidir con el nombre del volumen definido en 'agent.volumes'
+      env:
+        - name: DOCKER_CONFIG # Kaniko lee auth de aquí
+          value: "/kaniko/.docker/"
+      volumeMounts:
+        - name: docker-config # debe existir en agent.volumes
           mountPath: "/kaniko/.docker"
-      resources: # Solicitudes y límites de recursos
-        requests:
-          cpu: "250m"
-          memory: "512Mi"
-        limits:
-          cpu: "1"
-          memory: "1536Mi"
+      resources:
+        requests: { cpu: "250m", memory: "512Mi" }
+        limits: { cpu: "1", memory: "1536Mi" }
 
-  volumes: # Definición de volúmenes para los pods de agentes
-    - name: docker-config # Nombre del volumen
+  volumes:
+    - name: docker-config
       secret:
-        secretName: dockerhub-credentials # Referencia al secreto de Kubernetes
+        secretName: dockerhub-config # ← coincide con deploy_jenkins_env.sh
