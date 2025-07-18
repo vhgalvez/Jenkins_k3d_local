@@ -92,20 +92,22 @@ controller:
 
   sidecars:
     configAutoReload:
-      enabled: false
+      enabled: true
 
-  installPlugins:
-    - kubernetes
-    - workflow-aggregator
-    - git
-    - docker-workflow
-    - configuration-as-code
-    - credentials
-    - plain-credentials
-    - credentials-binding
-    - ssh-credentials
-    - github-oauth
-    - role-strategy
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+
+  volumes:
+    - name: docker-storage
+      emptyDir: {}
+    - name: docker-bin
+      emptyDir: {}
+
+  volumeMounts:
+    - name: docker-bin
+      mountPath: /usr/local/bin
 
   livenessProbe:
     httpGet:
@@ -134,10 +136,40 @@ controller:
     failureThreshold: 18
     timeoutSeconds: 5
 
-  securityContext:
-    runAsUser: 1000
-    runAsGroup: 1000
-    fsGroup: 1000
+  installPlugins:
+    - kubernetes
+    - workflow-aggregator
+    - git
+    - docker-workflow
+    - blueocean
+    - configuration-as-code
+    - credentials-binding
+    - ssh-credentials
+    - credentials
+    - plain-credentials
+    - github-oauth
+    - role-strategy
+
+agent:
+  podName: "jenkins-agent"
+  customJenkinsLabels:
+    - jenkins-agent
+  nodeUsageMode: NORMAL
+  containers:
+    - name: jnlp
+      image: "jenkins/inbound-agent:3107.v665000b_51092-10"
+      args: ["${computer.jnlpmac}", "${computer.name}"]
+      ttyEnabled: true
+    - name: nodejs
+      image: "node:18"
+      command: ["cat"]
+      ttyEnabled: true
+    - name: kaniko
+      image: "gcr.io/kaniko-project/executor:latest"
+      args: ["--help"]
+      ttyEnabled: true
+  connectTimeout: 100
+  runAsUser: 1000
 
 persistence:
   enabled: true
