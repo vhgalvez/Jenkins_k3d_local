@@ -36,36 +36,22 @@ for var in "${required_vars[@]}"; do
   fi
 done
 
-# --- Generar hash bcrypt si no está presente ---
-if [[ -z "${JENKINS_ADMIN_PASSWORD_HASH:-}" ]]; then
-  echo "🔑 Generando hash bcrypt..."
-  JENKINS_ADMIN_PASSWORD_HASH=$(python3 - <<EOF
+# --- Generar hash bcrypt de la contraseña (siempre en memoria) ---
+echo "🔑 Generando hash bcrypt..."
+JENKINS_ADMIN_PASSWORD_HASH=$(python3 - <<EOF
 import bcrypt, os
 password = os.environ['JENKINS_ADMIN_PASSWORD'].encode()
 hashed = bcrypt.hashpw(password, bcrypt.gensalt(prefix=b'2a'))
 print("#jbcrypt:" + hashed.decode())
 EOF
 )
-  if [[ ! "$JENKINS_ADMIN_PASSWORD_HASH" =~ ^#jbcrypt:\$2a\$.* ]]; then
-    echo "❌ Error: Hash inválido. Debe empezar con '#jbcrypt:\$2a\$'"
-    exit 1
-  fi
 
-  echo "✅ Hash generado: $JENKINS_ADMIN_PASSWORD_HASH"
-  # Actualizar .env con el nuevo hash
-  if grep -q "^JENKINS_ADMIN_PASSWORD_HASH=" .env; then
-    sed -i.bak "s|^JENKINS_ADMIN_PASSWORD_HASH=.*|JENKINS_ADMIN_PASSWORD_HASH=${JENKINS_ADMIN_PASSWORD_HASH}|" .env
-  else
-    echo "JENKINS_ADMIN_PASSWORD_HASH=${JENKINS_ADMIN_PASSWORD_HASH}" >> .env
-  fi
-else
-  echo "✅ Hash ya presente en .env"
-  echo "🔒 $JENKINS_ADMIN_PASSWORD_HASH"
-  if [[ ! "$JENKINS_ADMIN_PASSWORD_HASH" =~ ^#jbcrypt:\$2a\$.* ]]; then
-    echo "❌ Error: Hash inválido en .env"
-    exit 1
-  fi
+if [[ ! "$JENKINS_ADMIN_PASSWORD_HASH" =~ ^#jbcrypt:\$2a\$.* ]]; then
+  echo "❌ Error: Hash inválido. Debe empezar con '#jbcrypt:\$2a\$'"
+  exit 1
 fi
+
+echo "✅ Hash generado correctamente"
 
 # --- Variables de despliegue ---
 NAMESPACE="jenkins"
@@ -95,7 +81,7 @@ create_secrets() {
     --from-literal=token="$GITHUB_TOKEN" \
     -n "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 
-  # (Opcional) DockerHub Auth para Kaniko
+  # DockerHub Auth para Kaniko
   mkdir -p ~/.docker
   echo '{
     "auths": {
@@ -169,9 +155,7 @@ cat <<EOF
 🌐 URL:       http://localhost:8080
 👤 Usuario:   $JENKINS_ADMIN_USER
 🔒 Contraseña: $JENKINS_ADMIN_PASSWORD
-🧾 Hash:      $JENKINS_ADMIN_PASSWORD_HASH
-
-(Usa Ctrl+C para detener el port-forward si lo dejas abierto)
+🧾 Hash (usado en el secreto): $JENKINS_ADMIN_PASSWORD_HASH
 
 EOF
 
