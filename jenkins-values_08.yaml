@@ -5,22 +5,13 @@ controller:
     tag: "2.518-jdk21"
     pullPolicy: IfNotPresent
 
+  # Usa secretos ya creados por tu script deploy_jenkins_env.sh
   admin:
     existingSecret: jenkins-admin
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
-  envVars:
-    - name: JENKINS_ADMIN_USER
-      valueFrom:
-        secretKeyRef:
-          name: jenkins-admin
-          key: jenkins-admin-user
-    - name: JENKINS_ADMIN_PASSWORD_HASH
-      valueFrom:
-        secretKeyRef:
-          name: jenkins-admin
-          key: jenkins-admin-password
+  containerEnv: # Se inyectan al contenedor Jenkins (puede ser útil para debugging o plugins)
     - name: DOCKERHUB_USERNAME
       valueFrom:
         secretKeyRef:
@@ -37,13 +28,25 @@ controller:
           name: github-ci-token
           key: token
 
+  envVars: # Esto es lo que JCasC usa para interpolar en el YAML
+    - name: JENKINS_ADMIN_USER
+      valueFrom:
+        secretKeyRef:
+          name: jenkins-admin
+          key: jenkins-admin-user
+    - name: JENKINS_ADMIN_PASSWORD_HASH
+      valueFrom:
+        secretKeyRef:
+          name: jenkins-admin
+          key: jenkins-admin-password
+
   JCasC:
     enabled: true
     defaultConfig: false
     configScripts:
       main: |
         jenkins:
-          systemMessage: "🚀 Jenkins en Kubernetes (K3d/K3s)"
+          systemMessage: "🚀 Jenkins sobre Kubernetes (K3d/K3s)"
           securityRealm:
             local:
               allowsSignup: false
@@ -54,50 +57,39 @@ controller:
           authorizationStrategy:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
+
           clouds:
             - kubernetes:
                 name: "kubernetes"
                 serverUrl: "https://kubernetes.default"
                 skipTlsVerify: true
                 namespace: "jenkins"
-                jenkinsUrl: "http://jenkins.jenkins.svc.cluster.local:8080"
-                jenkinsTunnel: "jenkins-agent.jenkins.svc.cluster.local:50000"
+                jenkinsUrl: "http://jenkins-local-k3d:8080"
+                jenkinsTunnel: "jenkins-local-k3d-agent:50000"
                 containerCap: 10
                 connectTimeout: 5
                 readTimeout: 15
-                templates:
-                  - name: "default"
-                    label: "jenkins-agent"
-                    nodeUsageMode: NORMAL
-                    idleMinutes: 1
-                    containers:
-                      - name: jnlp
-                        image: "jenkins/inbound-agent:3107.v665000b_51092-10"
-                        args: "${computer.jnlpmac} ${computer.name}"
-                        ttyEnabled: true
-                        resourceRequestCpu: "100m"
-                        resourceRequestMemory: "128Mi"
-                        resourceLimitCpu: "500m"
-                        resourceLimitMemory: "512Mi"
 
         credentials:
           system:
             domainCredentials:
               - credentials:
                   - usernamePassword:
+                      scope: GLOBAL
                       id: dockerhub-credentials
                       username: "${DOCKERHUB_USERNAME}"
                       password: "${DOCKERHUB_TOKEN}"
-                      description: "🔐 DockerHub para CI/CD"
+                      description: "🔐 DockerHub Token para Kaniko y pipelines"
                   - string:
+                      scope: GLOBAL
                       id: github-ci-token
                       secret: "${GITHUB_TOKEN}"
-                      description: "🔐 GitHub PAT para GitOps"
+                      description: "🔐 GitHub PAT para GitOps / Webhooks"
 
         unclassified:
           location:
-            url: "http://jenkins.local"
             adminAddress: "admin@example.com"
+            url: "http://jenkins.local"
 
   installPlugins:
     - kubernetes
@@ -117,43 +109,49 @@ controller:
     configAutoReload:
       enabled: false
 
-  livenessProbe:
-    httpGet:
-      path: /login
-      port: 8080
-    initialDelaySeconds: 90
-    periodSeconds: 10
-    failureThreshold: 5
-    timeoutSeconds: 5
-
-  readinessProbe:
-    httpGet:
-      path: /login
-      port: 8080
-    initialDelaySeconds: 60
-    periodSeconds: 10
-    failureThreshold: 3
-    timeoutSeconds: 5
-
-  startupProbe:
-    httpGet:
-      path: /login
-      port: 8080
-    initialDelaySeconds: 120
-    periodSeconds: 10
-    failureThreshold: 18
-    timeoutSeconds: 5
-
-  securityContext:
-    runAsUser: 1000
-    runAsGroup: 1000
-    fsGroup: 1000
-
 persistence:
   enabled: true
   storageClass: local-path
   size: 8Gi
 
-service:
-  type: ClusterIP
-  agentListenerPort: 50000
+agent:
+  label: default
+  containers:
+    - name: nodejs
+      image: node:18-alpine
+      command: ["cat"]
+      ttyEnabled: true
+      env:
+        - name: NODE_ENV
+          value: "production"
+      resources:
+        requests:
+          cpu: "100m"
+          memory: "256Mi"
+        limits:
+          cpu: "500m"
+          memory: "512Mi"
+
+    - name: kaniko
+      image: gcr.io/kaniko-project/executor:v1.23.0-debug
+      command: ["/kaniko/executor"]
+      args: ["--help"]
+      ttyEnabled: true
+      env:
+        - name: DOCKER_CONFIG
+          value: "/kaniko/.docker"
+      volumeMounts:
+        - name: docker-config
+          mountPath: "/kaniko/.docker"
+      resources:
+        requests:
+          cpu: "250m"
+          memory: "512Mi"
+        limits:
+          cpu: "1"
+          memory: "1536Mi"
+
+  volumes:
+    - name: docker-config
+      secret:
+        secretName: dockerhub-config
