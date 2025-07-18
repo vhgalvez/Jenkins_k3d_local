@@ -2,84 +2,79 @@
 controller:
   image:
     repository: jenkins/jenkins
-    tag: "2.518-jdk21" # Versión de Jenkins con JDK 21
+    tag: "2.518-jdk21"
 
   admin:
-    existingSecret: jenkins-admin # Nombre del secreto de Kubernetes para credenciales de administrador
-    userKey: jenkins-admin-user # Clave dentro del secreto para el nombre de usuario
-    passwordKey: jenkins-admin-password # Clave dentro del secreto para la contraseña
+    existingSecret: jenkins-admin
+    userKey: jenkins-admin-user
+    passwordKey: jenkins-admin-password
 
-  containerEnv: # Variables de entorno para el contenedor principal de Jenkins
+  containerEnv:
     - name: DOCKERHUB_USERNAME
       valueFrom:
         secretKeyRef:
-          name: dockerhub-credentials # Secreto de DockerHub
-          key: username # Clave para el nombre de usuario
+          name: dockerhub-credentials
+          key: username
     - name: DOCKERHUB_TOKEN
       valueFrom:
         secretKeyRef:
-          name: dockerhub-credentials # Secreto de DockerHub
-          key: password # Clave para el token/contraseña
+          name: dockerhub-credentials
+          key: password
     - name: GITHUB_TOKEN
       valueFrom:
         secretKeyRef:
-          name: github-ci-token # Secreto de GitHub
-          key: token # Clave para el token de GitHub
+          name: github-ci-token
+          key: token
 
-  JCasC: # Configuración de Jenkins como Código (JCasC)
+  JCasC:
     enabled: true
-    defaultConfig: false # No usar la configuración por defecto de JCasC
+    defaultConfig: false
     configScripts:
-      main: | # Script principal de configuración de Jenkins
+      main: |
         jenkins:
-          systemMessage: "Bienvenido a Jenkins en Kubernetes 😎" # Mensaje de bienvenida en la UI de Jenkins
+          systemMessage: "Bienvenido a Jenkins en Kubernetes 😎"
           securityRealm:
-            local: # Configuración de seguridad local
-              allowsSignup: false # Deshabilitar el registro de nuevos usuarios
-              enableCaptcha: false # Deshabilitar Captcha
-              # El bloque 'users' se ha eliminado. El Helm chart usará el secreto 'jenkins-admin'
-              # para configurar el usuario 'admin' con la contraseña de tu archivo .env (123456).
+            local:
+              allowsSignup: false
+              enableCaptcha: false
           authorizationStrategy:
-            loggedInUsersCanDoAnything: # Estrategia de autorización: usuarios logueados pueden hacer todo
-              allowAnonymousRead: false # Deshabilitar lectura anónima
+            loggedInUsersCanDoAnything:
+              allowAnonymousRead: false
 
           clouds:
-            - kubernetes: # Configuración del plugin de Kubernetes
-                name: "kubernetes" # Nombre de la nube de Kubernetes en Jenkins
-                serverUrl: "https://kubernetes.default" # URL del servidor de la API de Kubernetes (in-cluster)
-                skipTlsVerify: true # Saltarse la verificación TLS (útil para entornos de desarrollo/k3d)
-                namespace: "jenkins" # Namespace donde se crearán los pods de agentes
-                jenkinsUrl: "http://jenkins-local-k3d:8080" # URL del controlador de Jenkins
-                jenkinsTunnel: "jenkins-local-k3d-agent:50000" # URL del túnel para agentes (servicio de agente)
-                containerCap: 10 # Número máximo de contenedores que se pueden lanzar
-                connectTimeout: 5 # Tiempo de espera para conectar con el agente
-                readTimeout: 15 # Tiempo de espera para leer del agente
-                # La sección 'templates' ha sido movida y consolidada
-                # en el bloque 'agent' del Helm chart para una mejor gestión.
-                # No es necesario definir plantillas aquí.
+            - kubernetes:
+                name: "kubernetes"
+                serverUrl: "https://kubernetes.default"
+                skipTlsVerify: true
+                namespace: "jenkins"
+                jenkinsUrl: "http://jenkins-local-k3d:8080"
+                jenkinsTunnel: "jenkins-local-k3d-agent:50000"
+                containerCap: 10
+                connectTimeout: 5
+                readTimeout: 15
 
-        credentials: # Configuración de credenciales en Jenkins
+        credentials:
           system:
             domainCredentials:
               - credentials:
-                  - usernamePassword: # Credencial de usuario/contraseña
-                      scope: GLOBAL # Alcance global
-                      id: dockerhub-credentials # ID de la credencial
-                      username: "${DOCKERHUB_USERNAME}" # Nombre de usuario de DockerHub (inyectado desde containerEnv)
-                      password: "${DOCKERHUB_TOKEN}" # Token de DockerHub (inyectado desde containerEnv)
+                  - usernamePassword:
+                      scope: GLOBAL
+                      id: dockerhub-credentials
+                      username: "${DOCKERHUB_USERNAME}"
+                      password: "${DOCKERHUB_TOKEN}"
                       description: "DockerHub Access Token for CI/CD"
-                  - string: # Credencial de tipo cadena secreta
-                      scope: GLOBAL # Alcance global
-                      id: github-ci-token # ID de la credencial
-                      secret: "${GITHUB_TOKEN}" # Token de GitHub (inyectado desde containerEnv)
+                  - string:
+                      scope: GLOBAL
+                      id: github-ci-token
+                      secret: "${GITHUB_TOKEN}"
                       description: "GitHub PAT para GitOps"
 
-        unclassified: # Configuración no clasificada (ej. URL de Jenkins)
+        unclassified:
           location:
-            adminAddress: "admin@jenkins.local" # Dirección de correo del administrador
-            url: "http://jenkins.local" # URL pública de Jenkins
+            adminAddress: "admin@jenkins.local"
+            url: "http://jenkins.local"
 
-  installPlugins: # Lista de plugins a instalar en Jenkins
+  installPlugins:
     - kubernetes
     - workflow-aggregator
     - git
@@ -92,48 +87,53 @@ controller:
     - github-oauth
     - role-strategy
 
-  sidecars: # Configuración de sidecars (contenedores adicionales)
+  sidecars:
     configAutoReload:
-      enabled: false # Deshabilitar recarga automática de configuración
+      enabled: false
 
-persistence: # Configuración de persistencia para el volumen de Jenkins home
-  enabled: true # Habilitar persistencia
-  storageClass: local-path # Clase de almacenamiento (típicamente para k3d/k3s)
-  size: 8Gi # Tamaño del volumen persistente
+persistence:
+  enabled: true
+  storageClass: local-path
+  size: 8Gi
 
-agent: # Configuración de agentes Kubernetes a través de los valores del Helm chart
-  # NUEVO: ponle label "default" a la plantilla que crea el chart
+agent:
   label: default
-
-  # Definición de contenedores adicionales para los pods de agentes
   containers:
     - name: nodejs
       image: node:18-alpine
-      command: ["cat"] # ← array, no string
+      command: ["cat"]
       ttyEnabled: true
       env:
         - name: NODE_ENV
           value: "production"
       resources:
-        requests: { cpu: "100m", memory: "256Mi" }
-        limits: { cpu: "500m", memory: "512Mi" }
+        requests:
+          cpu: "100m"
+          memory: "256Mi"
+        limits:
+          cpu: "500m"
+          memory: "512Mi"
 
     - name: kaniko
       image: gcr.io/kaniko-project/executor:v1.23.0-debug
-      command: ["/kaniko/executor"] # ← array, no string
-      args: ["--help"] # ← array, no string
+      command: ["/kaniko/executor"]
+      args: ["--help"]
       ttyEnabled: true
       env:
-        - name: DOCKER_CONFIG # Kaniko lee auth de aquí
+        - name: DOCKER_CONFIG
           value: "/kaniko/.docker/"
       volumeMounts:
-        - name: docker-config # debe existir en agent.volumes
+        - name: docker-config
           mountPath: "/kaniko/.docker"
       resources:
-        requests: { cpu: "250m", memory: "512Mi" }
-        limits: { cpu: "1", memory: "1536Mi" }
+        requests:
+          cpu: "250m"
+          memory: "512Mi"
+        limits:
+          cpu: "1"
+          memory: "1536Mi"
 
   volumes:
     - name: docker-config
       secret:
-        secretName: dockerhub-config # ← coincide con deploy_jenkins_env.sh
+        secretName: dockerhub-config
