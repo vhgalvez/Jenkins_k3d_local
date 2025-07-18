@@ -1,5 +1,4 @@
 # jenkins-values.yaml – Configuración completa y funcional para laboratorio k3d/k3s
-# jenkins-values.yaml – Configuración para depuración (envVars eliminados)
 controller:
   image:
     repository: jenkins/jenkins
