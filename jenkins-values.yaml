@@ -5,11 +5,26 @@ controller:
     tag: "2.518-jdk21"
     pullPolicy: IfNotPresent
 
+  # --- 1. Usuario admin desde Secret ---
   admin:
     existingSecret: jenkins-admin
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
+  # --- 2. Exporta variables al JVM para que JCasC pueda interpolarlas ---
+  envVars:
+    - name: JENKINS_ADMIN_USER
+      valueFrom:
+        secretKeyRef:
+          name: jenkins-admin
+          key: jenkins-admin-user
+    - name: JENKINS_ADMIN_PASSWORD_HASH
+      valueFrom:
+        secretKeyRef:
+          name: jenkins-admin
+          key: jenkins-admin-password
+
+  # --- 3. Otros secretos que usarán los pipelines ---
   containerEnv:
     - name: DOCKERHUB_USERNAME
       valueFrom:
@@ -27,13 +42,14 @@ controller:
           name: github-ci-token
           key: token
 
+  # --- 4. JCasC crea el usuario admin usando las envVars anteriores ---
   JCasC:
     enabled: true
     defaultConfig: false
     configScripts:
       main: |
         jenkins:
-          systemMessage: "🚀 Bienvenido a Jenkins sobre Kubernetes (K3d/K3s)"
+          systemMessage: "🚀 Bienvenido a Jenkins sobre Kubernetes (k3d/k3s)"
           securityRealm:
             local:
               allowsSignup: false
@@ -66,12 +82,12 @@ controller:
                       id: dockerhub-credentials
                       username: "${DOCKERHUB_USERNAME}"
                       password: "${DOCKERHUB_TOKEN}"
-                      description: "🔐 DockerHub Token para Kaniko y pipelines"
+                      description: "🔐 DockerHub token CI"
                   - string:
                       scope: GLOBAL
                       id: github-ci-token
                       secret: "${GITHUB_TOKEN}"
-                      description: "🔐 GitHub PAT para GitOps / Webhooks"
+                      description: "🔐 GitHub PAT GitOps"
 
         unclassified:
           location:
@@ -98,7 +114,7 @@ controller:
 
 persistence:
   enabled: true
-  storageClass: local-path
+  storageClass: local-path    # ↙ adapta si usas otra StorageClass
   size: 8Gi
 
 agent:
@@ -106,37 +122,29 @@ agent:
   containers:
     - name: nodejs
       image: node:18-alpine
-      command: ["cat"]
+      command: ['cat']
       ttyEnabled: true
       env:
         - name: NODE_ENV
-          value: "production"
+          value: production
       resources:
-        requests:
-          cpu: "100m"
-          memory: "256Mi"
-        limits:
-          cpu: "500m"
-          memory: "512Mi"
+        requests: { cpu: 100m, memory: 256Mi }
+        limits:   { cpu: 500m, memory: 512Mi }
 
     - name: kaniko
       image: gcr.io/kaniko-project/executor:v1.23.0-debug
-      command: ["/kaniko/executor"]
-      args: ["--help"]
+      command: ['/kaniko/executor']
+      args: ['--help']
       ttyEnabled: true
       env:
         - name: DOCKER_CONFIG
-          value: "/kaniko/.docker"
+          value: /kaniko/.docker
       volumeMounts:
         - name: docker-config
-          mountPath: "/kaniko/.docker"
+          mountPath: /kaniko/.docker
       resources:
-        requests:
-          cpu: "250m"
-          memory: "512Mi"
-        limits:
-          cpu: "1"
-          memory: "1536Mi"
+        requests: { cpu: 250m, memory: 512Mi }
+        limits:   { cpu: 1,   memory: 1536Mi }
 
   volumes:
     - name: docker-config
