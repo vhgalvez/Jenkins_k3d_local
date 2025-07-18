@@ -3,6 +3,7 @@ controller:
   image:
     repository: jenkins/jenkins
     tag: "2.518-jdk21"
+    pullPolicy: IfNotPresent
 
   admin:
     existingSecret: jenkins-admin
@@ -32,11 +33,14 @@ controller:
     configScripts:
       main: |
         jenkins:
-          systemMessage: "Bienvenido a Jenkins en Kubernetes 😎"
+          systemMessage: "🚀 Bienvenido a Jenkins sobre Kubernetes (K3d/K3s)"
           securityRealm:
             local:
               allowsSignup: false
               enableCaptcha: false
+              users:
+                - id: "${JENKINS_ADMIN_USER}"
+                  password: "${JENKINS_ADMIN_PASSWORD_HASH}"
           authorizationStrategy:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
@@ -62,16 +66,16 @@ controller:
                       id: dockerhub-credentials
                       username: "${DOCKERHUB_USERNAME}"
                       password: "${DOCKERHUB_TOKEN}"
-                      description: "DockerHub Access Token for CI/CD"
+                      description: "🔐 DockerHub Token para Kaniko y pipelines"
                   - string:
                       scope: GLOBAL
                       id: github-ci-token
                       secret: "${GITHUB_TOKEN}"
-                      description: "GitHub PAT para GitOps"
+                      description: "🔐 GitHub PAT para GitOps / Webhooks"
 
         unclassified:
           location:
-            adminAddress: "admin@jenkins.local"
+            adminAddress: "admin@example.com"
             url: "http://jenkins.local"
 
   installPlugins:
@@ -86,6 +90,7 @@ controller:
     - ssh-credentials
     - github-oauth
     - role-strategy
+    - pipeline-stage-view
 
   sidecars:
     configAutoReload:
@@ -121,7 +126,7 @@ agent:
       ttyEnabled: true
       env:
         - name: DOCKER_CONFIG
-          value: "/kaniko/.docker/"
+          value: "/kaniko/.docker"
       volumeMounts:
         - name: docker-config
           mountPath: "/kaniko/.docker"
