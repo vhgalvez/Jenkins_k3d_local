@@ -114,7 +114,7 @@ controller:
 
 persistence:
   enabled: true
-  storageClass: local-path    # ↙ adapta si usas otra StorageClass
+  storageClass: local-path # ↙ adapta si usas otra StorageClass
   size: 8Gi
 
 agent:
@@ -122,19 +122,19 @@ agent:
   containers:
     - name: nodejs
       image: node:18-alpine
-      command: ['cat']
+      command: ["cat"]
       ttyEnabled: true
       env:
         - name: NODE_ENV
           value: production
       resources:
         requests: { cpu: 100m, memory: 256Mi }
-        limits:   { cpu: 500m, memory: 512Mi }
+        limits: { cpu: 500m, memory: 512Mi }
 
     - name: kaniko
       image: gcr.io/kaniko-project/executor:v1.23.0-debug
-      command: ['/kaniko/executor']
-      args: ['--help']
+      command: ["/kaniko/executor"]
+      args: ["--help"]
       ttyEnabled: true
       env:
         - name: DOCKER_CONFIG
@@ -144,7 +144,7 @@ agent:
           mountPath: /kaniko/.docker
       resources:
         requests: { cpu: 250m, memory: 512Mi }
-        limits:   { cpu: 1,   memory: 1536Mi }
+        limits: { cpu: 1, memory: 1536Mi }
 
   volumes:
     - name: docker-config
