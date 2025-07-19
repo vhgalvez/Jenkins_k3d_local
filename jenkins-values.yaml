@@ -2,23 +2,22 @@
 #──────────────────────────────────────────────────────────────
 #  Jenkins Helm chart – valores renderizados con envsubst
 #──────────────────────────────────────────────────────────────
+# Plantilla – se renderiza con envsubst
 controller:
   image:
     repository: jenkins/jenkins
-    tag: "2.519-jdk21"
+    tag: "2.518-jdk21"
 
-  # ① El chart tomará usuario/contraseña hasheada del Secret
   admin:
     existingSecret: jenkins-admin
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
-  # ② 𝗠𝗔𝗣𝗔  (no lista)  – ahora sí se inyectan
+  # ← MAPA clave‑valor. Helm lo inyecta como variables
   env:
     JENKINS_ADMIN_USER: "${JENKINS_ADMIN_USER}"
-    JENKINS_ADMIN_PASSWORD_HASH: "${JENKINS_ADMIN_PASSWORD_HASH}"
+    JENKINS_ADMIN_PASSWORD_HASH: '${JENKINS_ADMIN_PASSWORD_HASH}'
 
-  # (variables opcionales para pipelines)
   containerEnv:
     - name: DOCKERHUB_USERNAME
       value: "${DOCKERHUB_USERNAME}"
@@ -27,6 +26,7 @@ controller:
     - name: GITHUB_TOKEN
       value: "${GITHUB_TOKEN}"
 
+  ## ① Cloud Kubernetes + plantilla “default”
   JCasC:
     enabled: true
     defaultConfig: false
@@ -42,8 +42,41 @@ controller:
                 - id: "${JENKINS_ADMIN_USER}"
                   password: '${JENKINS_ADMIN_PASSWORD_HASH}'
           authorizationStrategy:
-            loggedInUsersCanDoAnything:
-              allowAnonymousRead: false
+            loggedInUsersCanDoAnything: { allowAnonymousRead: false }
+
+          clouds:
+            - kubernetes:
+                name: "kubernetes"
+                serverUrl: "https://kubernetes.default"
+                skipTlsVerify: true
+                namespace: "jenkins"
+                jenkinsUrl: "http://jenkins-local-k3d:8080"
+                jenkinsTunnel: "jenkins-local-k3d-agent:50000"
+
+                templates:
+                  - name: default
+                    label: default          # 👈 coincide con Jenkinsfile
+                    idleMinutes: 1
+                    containers:
+                      - name: nodejs
+                        image: node:18-alpine
+                        command: "cat"
+                        ttyEnabled: true
+                      - name: kaniko
+                        image: gcr.io/kaniko-project/executor:v1.23.0-debug
+                        command: "/busybox/cat"
+                        ttyEnabled: true
+                        env:
+                          - name: DOCKER_CONFIG
+                            value: /kaniko/.docker
+                        volumeMounts:
+                          - mountPath: /kaniko/.docker
+                            name: docker-config
+                    volumes:
+                      - name: docker-config
+                        secret:
+                          secretName: dockerhub-config
+
         credentials:
           system:
             domainCredentials:
@@ -55,10 +88,6 @@ controller:
                   - string:
                       id: github-ci-token
                       secret: "${GITHUB_TOKEN}"
-        unclassified:
-          location:
-            url: "http://jenkins.local"
-            adminAddress: "admin@example.com"
 
 persistence:
   enabled: true

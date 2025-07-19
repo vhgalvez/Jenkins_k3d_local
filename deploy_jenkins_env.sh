@@ -1,70 +1,49 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-#──────────────────────────────────────────────────────────────
-#  Jenkins deployment with Kaniko + Docker Hub (k3d / k3s)
-#──────────────────────────────────────────────────────────────
-
-# 1) Cargar .env ------------------------------------------------
+# 0) Comprobaciones
+for c in kubectl helm python3 envsubst; do command -v $c >/dev/null || { echo "❌ Falta $c"; exit 1; }; done
 [[ -f .env ]] || { echo "❌ Falta .env"; exit 1; }
 set -a; source .env; set +a
 
-# 2) Verificar herramientas ------------------------------------
-for c in kubectl helm python3; do
-  command -v "$c" &>/dev/null || { echo "❌ Falta $c"; exit 1; }
-done
-
-# 3) Generar hash bcrypt (en memoria) --------------------------
-echo "🔑 Generando hash bcrypt..."
-JENKINS_ADMIN_PASSWORD_HASH=$(python3 - <<'PY'
-import bcrypt, os, sys
-pwd = os.environ['JENKINS_ADMIN_PASSWORD'].encode()
-print("#jbcrypt:" + bcrypt.hashpw(pwd, bcrypt.gensalt(prefix=b'2a')).decode())
-PY
+# 1) Hash bcrypt en RAM
+JENKINS_ADMIN_PASSWORD_HASH=$(python3 - <<EOF
+import bcrypt,os,sys; print("#jbcrypt:"+bcrypt.hashpw(os.environ['JENKINS_ADMIN_PASSWORD'].encode(),bcrypt.gensalt(prefix=b'2a')).decode())
+EOF
 )
 [[ $JENKINS_ADMIN_PASSWORD_HASH =~ ^#jbcrypt:\$2a\$ ]] || { echo "❌ Hash inválido"; exit 1; }
 
-# 4) Exportar para envsubst ------------------------------------
+# 2) Renderiza la plantilla
 export JENKINS_ADMIN_USER JENKINS_ADMIN_PASSWORD_HASH \
        DOCKERHUB_USERNAME DOCKERHUB_TOKEN GITHUB_TOKEN
-
 envsubst < jenkins-values.template.yaml > jenkins-values.yaml
 
-# 5) Crear/actualizar secretos ---------------------------------
-NAMESPACE=jenkins
-kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+# 3) Namespace + Secrets
+kubectl create ns jenkins --dry-run=client -o yaml | kubectl apply -f -
+kubectl delete secret jenkins-admin dockerhub-credentials github-ci-token dockerhub-config -n jenkins --ignore-not-found
 
-for s in jenkins-admin dockerhub-credentials github-ci-token; do
-  kubectl delete secret "$s" -n "$NAMESPACE" --ignore-not-found
-done
-
-kubectl create secret generic jenkins-admin \
+kubectl -n jenkins create secret generic jenkins-admin \
   --from-literal=jenkins-admin-user="$JENKINS_ADMIN_USER" \
-  --from-literal=jenkins-admin-password="$JENKINS_ADMIN_PASSWORD_HASH" \
-  -n "$NAMESPACE"
+  --from-literal=jenkins-admin-password="$JENKINS_ADMIN_PASSWORD_HASH"
 
-kubectl create secret generic dockerhub-credentials \
+kubectl -n jenkins create secret generic dockerhub-credentials \
   --from-literal=username="$DOCKERHUB_USERNAME" \
-  --from-literal=password="$DOCKERHUB_TOKEN" \
-  -n "$NAMESPACE"
+  --from-literal=password="$DOCKERHUB_TOKEN"
 
-kubectl create secret generic github-ci-token \
-  --from-literal=token="$GITHUB_TOKEN" \
-  -n "$NAMESPACE"
+kubectl -n jenkins create secret generic github-ci-token \
+  --from-literal=token="$GITHUB_TOKEN"
 
-# 6) Instalar / actualizar Jenkins -----------------------------
-helm repo add jenkins https://charts.jenkins.io 2>/dev/null || true
-helm repo update
+# config.json para Kaniko
+mkdir -p ~/.docker
+echo "{\"auths\":{\"https://index.docker.io/v1/\":{\"auth\":\"$(echo -n "$DOCKERHUB_USERNAME:$DOCKERHUB_TOKEN" | base64)\"}}}" > ~/.docker/config.json
+kubectl -n jenkins create secret generic dockerhub-config --from-file=config.json=$HOME/.docker/config.json --dry-run=client -o yaml | kubectl apply -f -
 
-helm upgrade --install jenkins-local-k3d jenkins/jenkins \
-  -n "$NAMESPACE" \
-  -f jenkins-values.yaml \
-  --timeout 10m
+# 4) Instala/actualiza Jenkins
+helm repo add jenkins https://charts.jenkins.io >/dev/null || true
+helm repo update >/dev/null
+helm upgrade --install jenkins-local-k3d jenkins/jenkins -n jenkins -f jenkins-values.yaml --timeout 10m
 
-echo -e "\n🎉 Jenkins desplegado. Inicia sesión con:"
-echo "   URL: http://localhost:8080"
-echo "   Usuario: $JENKINS_ADMIN_USER"
-echo "   Contraseña: $JENKINS_ADMIN_PASSWORD"
-echo
-echo "🔗 Port‑forward activo (Ctrl‑C para salir)…"
-kubectl port-forward -n "$NAMESPACE" svc/jenkins-local-k3d 8080:8080
+# 5) Espera Ready
+kubectl rollout status statefulset/jenkins-local-k3d -n jenkins --timeout=600s
+echo "✅ Jenkins listo → http://localhost:8080 (usuario ${JENKINS_ADMIN_USER})"
+kubectl -n jenkins port-forward svc/jenkins-local-k3d 8080:8080
