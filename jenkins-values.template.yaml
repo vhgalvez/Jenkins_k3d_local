@@ -13,10 +13,9 @@ controller:
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
-  # ← MAPA clave‑valor. Helm lo inyecta como variables
   env:
     JENKINS_ADMIN_USER: "${JENKINS_ADMIN_USER}"
-    JENKINS_ADMIN_PASSWORD_HASH: '${JENKINS_ADMIN_PASSWORD_HASH}'
+    JENKINS_ADMIN_PASSWORD_HASH: "${JENKINS_ADMIN_PASSWORD_HASH}"
 
   containerEnv:
     - name: DOCKERHUB_USERNAME
@@ -26,7 +25,6 @@ controller:
     - name: GITHUB_TOKEN
       value: "${GITHUB_TOKEN}"
 
-  ## ① Cloud Kubernetes + plantilla “default”
   JCasC:
     enabled: true
     defaultConfig: false
@@ -42,7 +40,8 @@ controller:
                 - id: "${JENKINS_ADMIN_USER}"
                   password: '${JENKINS_ADMIN_PASSWORD_HASH}'
           authorizationStrategy:
-            loggedInUsersCanDoAnything: { allowAnonymousRead: false }
+            loggedInUsersCanDoAnything:
+              allowAnonymousRead: false
 
           clouds:
             - kubernetes:
@@ -52,10 +51,9 @@ controller:
                 namespace: "jenkins"
                 jenkinsUrl: "http://jenkins-local-k3d:8080"
                 jenkinsTunnel: "jenkins-local-k3d-agent:50000"
-
                 templates:
                   - name: default
-                    label: default          # 👈 coincide con Jenkinsfile
+                    label: default
                     idleMinutes: 1
                     containers:
                       - name: nodejs
