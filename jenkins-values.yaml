@@ -5,22 +5,20 @@
 controller:
   image:
     repository: jenkins/jenkins
-    tag: "2.518-jdk21"
+    tag: "2.519-jdk21"
 
-  # El chart leerá la contraseña ya hasheada del secret
+  # ① El chart tomará usuario/contraseña hasheada del Secret
   admin:
     existingSecret: jenkins-admin
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
-  # El chart **NO** acepta valueFrom, por eso metemos value literal
+  # ② 𝗠𝗔𝗣𝗔  (no lista)  – ahora sí se inyectan
   env:
-    - name: JENKINS_ADMIN_USER
-      value: "${JENKINS_ADMIN_USER}"
-    - name: JENKINS_ADMIN_PASSWORD_HASH # <-- hash bcrypt literal
-      value: "${JENKINS_ADMIN_PASSWORD_HASH}"
+    JENKINS_ADMIN_USER: "${JENKINS_ADMIN_USER}"
+    JENKINS_ADMIN_PASSWORD_HASH: "${JENKINS_ADMIN_PASSWORD_HASH}"
 
-  # Opcional: disponibles en los pipelines
+  # (variables opcionales para pipelines)
   containerEnv:
     - name: DOCKERHUB_USERNAME
       value: "${DOCKERHUB_USERNAME}"
@@ -46,7 +44,6 @@ controller:
           authorizationStrategy:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
-
         credentials:
           system:
             domainCredentials:
@@ -55,36 +52,15 @@ controller:
                       id: dockerhub-credentials
                       username: "${DOCKERHUB_USERNAME}"
                       password: "${DOCKERHUB_TOKEN}"
-                      description: "🔐 DockerHub"
                   - string:
                       id: github-ci-token
                       secret: "${GITHUB_TOKEN}"
-                      description: "🔐 GitHub"
-
         unclassified:
           location:
             url: "http://jenkins.local"
             adminAddress: "admin@example.com"
 
-  installPlugins:
-    - kubernetes
-    - workflow-aggregator
-    - git
-    - docker-workflow
-    - configuration-as-code
-    - credentials
-    - plain-credentials
-    - credentials-binding
-    - ssh-credentials
-    - github-oauth
-    - role-strategy
-    - pipeline-stage-view
-
 persistence:
   enabled: true
   storageClass: local-path
   size: 8Gi
-
-service:
-  type: ClusterIP
-  agentListenerPort: 50000
