@@ -10,8 +10,7 @@ controller:
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
-  # Variables de entorno para JCasC
-  envVars:
+  env: # 👈 CORREGIDO: esta es la clave para que JCasC vea las variables
     - name: JENKINS_ADMIN_USER
       valueFrom:
         secretKeyRef:
@@ -23,8 +22,7 @@ controller:
           name: jenkins-admin
           key: jenkins-admin-password
 
-  # Variables opcionales para contenedor Jenkins (útiles para debugging o scripts)
-  containerEnv:
+  containerEnv: # Opcional, para debugging o para usar en pipelines
     - name: DOCKERHUB_USERNAME
       valueFrom:
         secretKeyRef:
