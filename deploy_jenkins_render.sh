@@ -3,7 +3,7 @@ set -euo pipefail
 
 # 0. Requisitos
 for c in kubectl helm python3 envsubst; do
-  command -v "$c" >/dev/null || { echo "❌ Falta $c"; exit 1; }
+    command -v "$c" >/dev/null || { echo "❌ Falta $c"; exit 1; }
 done
 
 [[ -f .env ]] || { echo "❌ Falta .env"; exit 1; }
@@ -14,7 +14,7 @@ source .env
 set +a
 
 for var in JENKINS_ADMIN_USER JENKINS_ADMIN_PASSWORD DOCKERHUB_USERNAME DOCKERHUB_TOKEN GITHUB_TOKEN; do
-  [[ -z "${!var:-}" ]] && { echo "❌ Variable no definida: $var"; exit 1; }
+    [[ -z "${!var:-}" ]] && { echo "❌ Variable no definida: $var"; exit 1; }
 done
 
 # 2. Generar hash bcrypt
@@ -29,14 +29,14 @@ EOF
 )
 
 [[ "$JENKINS_ADMIN_PASSWORD_HASH" =~ ^#jbcrypt:\$2a\$.* ]] || {
-  echo "❌ Hash inválido"; exit 1
+    echo "❌ Hash inválido"; exit 1
 }
 
 # 3. Renderizar values
 echo "📝 Renderizando jenkins-values.yaml…"
 tmpfile=$(mktemp /tmp/jenkins-values.XXXXXX.yaml)
 export JENKINS_ADMIN_USER JENKINS_ADMIN_PASSWORD_HASH \
-       DOCKERHUB_USERNAME DOCKERHUB_TOKEN GITHUB_TOKEN
+DOCKERHUB_USERNAME DOCKERHUB_TOKEN GITHUB_TOKEN
 envsubst < jenkins-values.template.yaml > "$tmpfile"
 mv -f "$tmpfile" jenkins-values.yaml
 
@@ -52,18 +52,18 @@ kubectl create namespace jenkins --dry-run=client -o yaml | kubectl apply -f -
 kubectl delete secret jenkins-admin dockerhub-credentials github-ci-token dockerhub-config -n jenkins --ignore-not-found
 
 kubectl create secret generic jenkins-admin \
-  --from-literal=jenkins-admin-user="$JENKINS_ADMIN_USER" \
-  --from-literal=jenkins-admin-password="$JENKINS_ADMIN_PASSWORD_HASH" \
-  -n jenkins
+--from-literal=jenkins-admin-user="$JENKINS_ADMIN_USER" \
+--from-literal=jenkins-admin-password="$JENKINS_ADMIN_PASSWORD_HASH" \
+-n jenkins
 
 kubectl create secret generic dockerhub-credentials \
-  --from-literal=username="$DOCKERHUB_USERNAME" \
-  --from-literal=password="$DOCKERHUB_TOKEN" \
-  -n jenkins
+--from-literal=username="$DOCKERHUB_USERNAME" \
+--from-literal=password="$DOCKERHUB_TOKEN" \
+-n jenkins
 
 kubectl create secret generic github-ci-token \
-  --from-literal=token="$GITHUB_TOKEN" \
-  -n jenkins
+--from-literal=token="$GITHUB_TOKEN" \
+-n jenkins
 
 echo "🛠️  Generando docker config.json para Kaniko..."
 mkdir -p ~/.docker
@@ -76,8 +76,8 @@ echo "{
 }" > ~/.docker/config.json
 
 kubectl create secret generic dockerhub-config \
-  --from-file=config.json=$HOME/.docker/config.json \
-  -n jenkins --dry-run=client -o yaml | kubectl apply -f -
+--from-file=config.json=$HOME/.docker/config.json \
+-n jenkins --dry-run=client -o yaml | kubectl apply -f -
 
 # 6. Instalar Jenkins
 echo "📦 Instalando Jenkins con Helm..."
@@ -85,9 +85,9 @@ helm repo add jenkins https://charts.jenkins.io >/dev/null || true
 helm repo update >/dev/null
 
 helm upgrade --install jenkins-local-k3d jenkins/jenkins \
-  -n jenkins \
-  -f jenkins-values.yaml \
-  --timeout 10m
+-n jenkins \
+-f jenkins-values.yaml \
+--timeout 10m
 
 # 7. Esperar
 echo "⏳ Esperando a que Jenkins esté listo..."
