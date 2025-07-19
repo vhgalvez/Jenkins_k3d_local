@@ -1,27 +1,33 @@
 # jenkins-values.yaml – Configuración completa y funcional para laboratorio k3d/k3s
+#──────────────────────────────────────────────────────────────
+#  Jenkins Helm chart – valores renderizados con envsubst
+#──────────────────────────────────────────────────────────────
 controller:
   image:
     repository: jenkins/jenkins
     tag: "2.518-jdk21"
-    pullPolicy: IfNotPresent
 
+  # El chart leerá la contraseña ya hasheada del secret
   admin:
     existingSecret: jenkins-admin
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
-  # ← LAS variables que el chart inyectará al contenedor
+  # El chart **NO** acepta valueFrom, por eso metemos value literal
   env:
     - name: JENKINS_ADMIN_USER
-      valueFrom:
-        secretKeyRef:
-          name: jenkins-admin
-          key: jenkins-admin-user
-    - name: JENKINS_ADMIN_PASSWORD_HASH
-      valueFrom:
-        secretKeyRef:
-          name: jenkins-admin
-          key: jenkins-admin-password
+      value: "${JENKINS_ADMIN_USER}"
+    - name: JENKINS_ADMIN_PASSWORD_HASH # <-- hash bcrypt literal
+      value: "${JENKINS_ADMIN_PASSWORD_HASH}"
+
+  # Opcional: disponibles en los pipelines
+  containerEnv:
+    - name: DOCKERHUB_USERNAME
+      value: "${DOCKERHUB_USERNAME}"
+    - name: DOCKERHUB_TOKEN
+      value: "${DOCKERHUB_TOKEN}"
+    - name: GITHUB_TOKEN
+      value: "${GITHUB_TOKEN}"
 
   JCasC:
     enabled: true
@@ -36,15 +42,10 @@ controller:
               enableCaptcha: false
               users:
                 - id: "${JENKINS_ADMIN_USER}"
-                  # 👇  ¡COMILLAS!  ─ evita que YAML trate # como comentario
                   password: '${JENKINS_ADMIN_PASSWORD_HASH}'
           authorizationStrategy:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
-
-          # (plantilla de agente kubernetes opcional, omítela si usas la del chart)
-          # clouds:
-          #   - kubernetes: …
 
         credentials:
           system:
@@ -54,11 +55,11 @@ controller:
                       id: dockerhub-credentials
                       username: "${DOCKERHUB_USERNAME}"
                       password: "${DOCKERHUB_TOKEN}"
-                      description: "🔐 DockerHub token"
+                      description: "🔐 DockerHub"
                   - string:
                       id: github-ci-token
                       secret: "${GITHUB_TOKEN}"
-                      description: "🔐 GitHub PAT"
+                      description: "🔐 GitHub"
 
         unclassified:
           location:
@@ -83,3 +84,7 @@ persistence:
   enabled: true
   storageClass: local-path
   size: 8Gi
+
+service:
+  type: ClusterIP
+  agentListenerPort: 50000
