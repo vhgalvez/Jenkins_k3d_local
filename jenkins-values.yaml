@@ -10,7 +10,8 @@ controller:
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
-  env: # 👈 CORREGIDO: esta es la clave para que JCasC vea las variables
+  # ← LAS variables que el chart inyectará al contenedor
+  env:
     - name: JENKINS_ADMIN_USER
       valueFrom:
         secretKeyRef:
@@ -22,66 +23,28 @@ controller:
           name: jenkins-admin
           key: jenkins-admin-password
 
-  containerEnv: # Opcional, para debugging o para usar en pipelines
-    - name: DOCKERHUB_USERNAME
-      valueFrom:
-        secretKeyRef:
-          name: dockerhub-credentials
-          key: username
-    - name: DOCKERHUB_TOKEN
-      valueFrom:
-        secretKeyRef:
-          name: dockerhub-credentials
-          key: password
-    - name: GITHUB_TOKEN
-      valueFrom:
-        secretKeyRef:
-          name: github-ci-token
-          key: token
-
   JCasC:
     enabled: true
     defaultConfig: false
     configScripts:
       main: |
         jenkins:
-          systemMessage: "🚀 Jenkins sobre K3d/K3s (DevOps Ready)"
+          systemMessage: "🚀 Jenkins sobre K3d/K3s – DevOps ready"
           securityRealm:
             local:
               allowsSignup: false
               enableCaptcha: false
               users:
                 - id: "${JENKINS_ADMIN_USER}"
-                  password: "${JENKINS_ADMIN_PASSWORD_HASH}"
+                  # 👇  ¡COMILLAS!  ─ evita que YAML trate # como comentario
+                  password: '${JENKINS_ADMIN_PASSWORD_HASH}'
           authorizationStrategy:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
 
-          clouds:
-            - kubernetes:
-                name: "kubernetes"
-                serverUrl: "https://kubernetes.default"
-                skipTlsVerify: true
-                namespace: "jenkins"
-                jenkinsUrl: "http://jenkins.jenkins:8080"
-                jenkinsTunnel: "jenkins-agent.jenkins:50000"
-                containerCap: 10
-                connectTimeout: 5
-                readTimeout: 15
-                templates:
-                  - name: default
-                    label: jenkins-agent
-                    nodeUsageMode: NORMAL
-                    idleMinutes: 1
-                    containers:
-                      - name: jnlp
-                        image: "jenkins/inbound-agent:3107.v665000b_51092-10"
-                        args: "${computer.jnlpmac} ${computer.name}"
-                        ttyEnabled: true
-                        resourceRequestCpu: "100m"
-                        resourceRequestMemory: "128Mi"
-                        resourceLimitCpu: "500m"
-                        resourceLimitMemory: "512Mi"
+          # (plantilla de agente kubernetes opcional, omítela si usas la del chart)
+          # clouds:
+          #   - kubernetes: …
 
         credentials:
           system:
@@ -91,11 +54,11 @@ controller:
                       id: dockerhub-credentials
                       username: "${DOCKERHUB_USERNAME}"
                       password: "${DOCKERHUB_TOKEN}"
-                      description: "🔐 DockerHub CI"
+                      description: "🔐 DockerHub token"
                   - string:
                       id: github-ci-token
                       secret: "${GITHUB_TOKEN}"
-                      description: "🔐 GitHub PAT"
+                      description: "🔐 GitHub PAT"
 
         unclassified:
           location:
@@ -116,47 +79,7 @@ controller:
     - role-strategy
     - pipeline-stage-view
 
-  sidecars:
-    configAutoReload:
-      enabled: false
-
-  livenessProbe:
-    httpGet:
-      path: /login
-      port: 8080
-    initialDelaySeconds: 90
-    periodSeconds: 10
-    failureThreshold: 5
-    timeoutSeconds: 5
-
-  readinessProbe:
-    httpGet:
-      path: /login
-      port: 8080
-    initialDelaySeconds: 60
-    periodSeconds: 10
-    failureThreshold: 3
-    timeoutSeconds: 5
-
-  startupProbe:
-    httpGet:
-      path: /login
-      port: 8080
-    initialDelaySeconds: 120
-    periodSeconds: 10
-    failureThreshold: 18
-    timeoutSeconds: 5
-
-  securityContext:
-    runAsUser: 1000
-    runAsGroup: 1000
-    fsGroup: 1000
-
 persistence:
   enabled: true
   storageClass: local-path
   size: 8Gi
-
-service:
-  type: ClusterIP
-  agentListenerPort: 50000
