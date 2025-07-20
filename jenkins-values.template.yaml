@@ -9,18 +9,15 @@ controller:
     repository: jenkins/jenkins
     tag: "2.518-jdk21"
 
-  # Admin user/password desde el Secret que generas en el paso del script
   admin:
     existingSecret: jenkins-admin
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
-  # Variables de entorno básicas dentro del controller
   env:
     JENKINS_ADMIN_USER: "${JENKINS_ADMIN_USER}"
     JENKINS_ADMIN_PASSWORD_HASH: "${JENKINS_ADMIN_PASSWORD_HASH}"
 
-  # Credenciales a disposición del controller (útiles para algún plugin)
   containerEnv:
     - name: DOCKERHUB_USERNAME
       value: "${DOCKERHUB_USERNAME}"
@@ -29,12 +26,9 @@ controller:
     - name: GITHUB_TOKEN
       value: "${GITHUB_TOKEN}"
 
-  # -------------------------------------------------------------------------
-  # Jenkins Configuration as Code (JCasC)
-  # -------------------------------------------------------------------------
   JCasC:
     enabled: true
-    defaultConfig: false         # no mezclar con la config por defecto
+    defaultConfig: false
     configScripts:
       main: |
         jenkins:
@@ -52,7 +46,6 @@ controller:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
 
-          # ---------- Kubernetes Cloud (agentes en pods) -------------------
           clouds:
             - kubernetes:
                 name: "kubernetes"
@@ -66,31 +59,24 @@ controller:
                     label: "default"
                     idleMinutes: 1
                     containers:
-                      # -- Contenedor Node.js --------------------------------
                       - name: "nodejs"
                         image: "node:18-alpine"
                         command: "cat"
                         ttyEnabled: true
 
-                      # -- Contenedor Kaniko ---------------------------------
                       - name: "kaniko"
                         image: "gcr.io/kaniko-project/executor:v1.23.0-debug"
                         command: "/busybox/cat"
                         ttyEnabled: true
-                        env:
-                          - name: "DOCKER_CONFIG"
+                        envVars:
+                          - key: "DOCKER_CONFIG"
                             value: "/kaniko/.docker"
 
-                    # ------ Volúmenes (⚠️ sin readOnly / volumeName) --------
                     volumes:
                       - secretVolume:
                           secretName: "dockerhub-config"
                           mountPath: "/kaniko/.docker"
-                          # defaultMode y optional son los únicos soportados
-                          # defaultMode: 0400          # ← opcional
-                          # optional: false            # ← opcional
 
-        # ----------------------- Credenciales globales ----------------------
         credentials:
           system:
             domainCredentials:
@@ -103,9 +89,6 @@ controller:
                       id: "github-ci-token"
                       secret: "${GITHUB_TOKEN}"
 
-# ---------------------------------------------------------------------------
-# Persistencia (PVC local-path en k3d/k3s)
-# ---------------------------------------------------------------------------
 persistence:
   enabled: true
   storageClass: local-path
