@@ -37,6 +37,7 @@ done
 
 # 2. Generar hash BCrypt solo en RAM ------------------------------------------
 echo "🔐 Generando hash bcrypt..."
+
 JENKINS_ADMIN_PASSWORD_HASH="$(
   python3 - <<'PY'
 import bcrypt, os
@@ -46,8 +47,16 @@ PY
 )"
 
 # Validar formato del hash
-[[ $JENKINS_ADMIN_PASSWORD_HASH =~ ^#jbcrypt:\$2a\$ ]] \
-  || { echo "❌ Hash inválido"; exit 1; }
+if [[ "$JENKINS_ADMIN_PASSWORD_HASH" =~ ^#jbcrypt:\$2a\$ ]]; then
+  echo "✅ Hash válido"
+else
+  echo "❌ Hash inválido"; exit 1
+fi
+
+# Mostrar resultados por depuración
+echo "👤 Usuario: $JENKINS_ADMIN_USER"
+echo "🔑 Hash:    $JENKINS_ADMIN_PASSWORD_HASH"
+
 
 # 3. Renderizar jenkins-values.yaml -------------------------------------------
 export JENKINS_ADMIN_USER JENKINS_ADMIN_PASSWORD_HASH \
