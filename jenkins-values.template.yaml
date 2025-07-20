@@ -1,23 +1,26 @@
 # jenkins-values.template.yaml
 # ---------------------------------------------------------------------------
 # Jenkins Helm chart – plantilla para envsubst
-#   • Conserva agentes: nodejs & kaniko
-#   • Secret dockerhub‑config montado en /kaniko/.docker
+#   • Agentes: nodejs & kaniko
+#   • Secreto dockerhub‑config montado en /kaniko/.docker
 # ---------------------------------------------------------------------------
 controller:
   image:
     repository: jenkins/jenkins
     tag: "2.518-jdk21"
 
+  # Credenciales de administrador obtenidas del Secret creado por el script
   admin:
     existingSecret: jenkins-admin
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
+  # Vars internas del controller
   env:
     JENKINS_ADMIN_USER: "${JENKINS_ADMIN_USER}"
     JENKINS_ADMIN_PASSWORD_HASH: "${JENKINS_ADMIN_PASSWORD_HASH}"
 
+  # Vars que puedan necesitar plugins (no críticas para el error actual)
   containerEnv:
     - name: DOCKERHUB_USERNAME
       value: "${DOCKERHUB_USERNAME}"
@@ -26,6 +29,9 @@ controller:
     - name: GITHUB_TOKEN
       value: "${GITHUB_TOKEN}"
 
+  # -------------------------------------------------------------------------
+  # Jenkins Configuration as Code (JCasC)
+  # -------------------------------------------------------------------------
   JCasC:
     enabled: true
     defaultConfig: false
@@ -33,7 +39,6 @@ controller:
       main: |
         jenkins:
           systemMessage: "🚀 Jenkins sobre K3d/K3s – DevOps ready"
-
           securityRealm:
             local:
               allowsSignup: false
@@ -41,11 +46,11 @@ controller:
               users:
                 - id: "${JENKINS_ADMIN_USER}"
                   password: '${JENKINS_ADMIN_PASSWORD_HASH}'
-
           authorizationStrategy:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
 
+          # ---------- Kubernetes cloud (agentes en pods) --------------------
           clouds:
             - kubernetes:
                 name: "kubernetes"
@@ -59,24 +64,27 @@ controller:
                     label: "default"
                     idleMinutes: 1
                     containers:
+                      # --- Contenedor Node.js --------------------------------
                       - name: "nodejs"
                         image: "node:18-alpine"
                         command: "cat"
                         ttyEnabled: true
 
+                      # --- Contenedor Kaniko ---------------------------------
                       - name: "kaniko"
                         image: "gcr.io/kaniko-project/executor:v1.23.0-debug"
                         command: "/busybox/cat"
                         ttyEnabled: true
-                        envVars:
-                          - key: "DOCKER_CONFIG"
-                            value: "/kaniko/.docker"
+                        envVars:               # 👈 LISTA de mapas de 1‑solo‑par
+                          - DOCKER_CONFIG: "/kaniko/.docker"
 
+                    # ------- Volumen secreto con credenciales DockerHub ------
                     volumes:
                       - secretVolume:
                           secretName: "dockerhub-config"
                           mountPath: "/kaniko/.docker"
 
+        # ------------------------ Credenciales globales ----------------------
         credentials:
           system:
             domainCredentials:
@@ -89,6 +97,9 @@ controller:
                       id: "github-ci-token"
                       secret: "${GITHUB_TOKEN}"
 
+# ---------------------------------------------------------------------------
+# Persistencia: PVC local‑path (k3d/k3s)
+# ---------------------------------------------------------------------------
 persistence:
   enabled: true
   storageClass: local-path
