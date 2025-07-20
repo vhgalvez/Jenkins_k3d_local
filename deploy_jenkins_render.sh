@@ -1,116 +1,116 @@
 #!/usr/bin/env bash
+# ---------------------------------------------------------------------------
+# Despliega Jenkins en k3d/k3s usando el chart oficial + JCasC
+# ---------------------------------------------------------------------------
+set -eu  # (-o pipefail omitido por /bin/sh)
 
-# -----------------------------------------------------------------------------
-# Despliega Jenkins en k3d/k3s usando el chart oficial + JCasC 
-# -----------------------------------------------------------------------------
 # deploy_jenkins_render.sh
 
-set -eu  # -o pipefail omitido por compatibilidad con /bin/sh
 
-# 0. Comprobaciones básicas ----------------------------------------------------
+# ───────────────────────── 0. BINARIOS Y ENV  ────────────────────────────────
 for bin in kubectl helm python3 envsubst; do
-  command -v "$bin" >/dev/null || { echo "❌ Falta $bin"; exit 1; }
+    command -v "$bin" >/dev/null || { echo "❌ Falta $bin"; exit 1; }
 done
 [[ -f .env ]] || { echo "❌ Falta .env"; exit 1; }
 
-# 🔄 Fase previa: limpieza completa --------------------------------------------
-echo "🧹 Eliminando Jenkins anterior si existe..."
-helm uninstall jenkins-local-k3d -n jenkins --wait || true
-kubectl delete pvc --selector=app.kubernetes.io/instance=jenkins-local-k3d -n jenkins --ignore-not-found
-kubectl delete secret jenkins-admin dockerhub-credentials github-ci-token dockerhub-config -n jenkins --ignore-not-found
-kubectl delete configmap jenkins-jcasc-config -n jenkins --ignore-not-found
-kubectl delete statefulset jenkins-local-k3d -n jenkins --ignore-not-found
-kubectl delete svc jenkins-local-k3d -n jenkins --ignore-not-found
-kubectl delete pod -l app.kubernetes.io/instance=jenkins-local-k3d -n jenkins --ignore-not-found
-kubectl delete deployment -l app.kubernetes.io/instance=jenkins-local-k3d -n jenkins --ignore-not-found
+# shellcheck disable=SC1091
+set -a; source .env; set +a
 
-# 1. Cargar variables de entorno ----------------------------------------------
-set -a
-source .env
-set +a
+: "${JENKINS_ADMIN_USER?}";   : "${JENKINS_ADMIN_PASSWORD?}"
+: "${DOCKERHUB_USERNAME?}";   : "${DOCKERHUB_TOKEN?}"
+: "${GITHUB_TOKEN?}"
 
-# Validar que las variables requeridas no estén vacías
-for v in JENKINS_ADMIN_USER JENKINS_ADMIN_PASSWORD \
-         DOCKERHUB_USERNAME DOCKERHUB_TOKEN GITHUB_TOKEN; do
-  [[ -z "${!v:-}" ]] && { echo "❌ Variable $v vacía en .env"; exit 1; }
-done
+# Puertos locales (se pueden sobre‑escribir en .env)
+HTTP_PORT="${HTTP_PORT:-8080}"
+AGENT_PORT="${AGENT_PORT:-50000}"
 
-# 2. Generar hash BCrypt solo en RAM ------------------------------------------
-echo "🔐 Generando hash bcrypt..."
+# ──────────────────────── 1. FUNCIONES UTILIDAD ──────────────────────────────
+cleanup_previous() {
+    echo "🧹 Eliminando despliegue Jenkins anterior…"
+    helm uninstall jenkins-local-k3d -n jenkins --wait || true
+    kubectl delete all,pvc,secret,cm,svc,statefulset,deploy -l app.kubernetes.io/instance=jenkins-local-k3d -n jenkins --ignore-not-found
+}
 
-JENKINS_ADMIN_PASSWORD_HASH="$(
-  python3 - <<'PY'
-import bcrypt, os
-hp = bcrypt.hashpw(os.environ['JENKINS_ADMIN_PASSWORD'].encode(), bcrypt.gensalt(prefix=b'2a'))
-print('#jbcrypt:' + hp.decode())
+kill_old_pf() {
+    # Mata port‑forward antiguos para evitar “address already in use”
+    pkill -f "kubectl .*port-forward.*jenkins-local-k3d" 2>/dev/null || true
+}
+
+bcrypt_hash() {
+  python3 - <<'PY' "$JENKINS_ADMIN_PASSWORD"
+import bcrypt, os, sys
+pwd=sys.argv[1].encode()
+print('#jbcrypt:' + bcrypt.hashpw(pwd, bcrypt.gensalt(prefix=b'2a')).decode())
 PY
-)"
+}
 
-# Validar formato del hash
-if [[ "$JENKINS_ADMIN_PASSWORD_HASH" =~ ^#jbcrypt:\$2a\$ ]]; then
-  echo "✅ Hash válido"
-else
-  echo "❌ Hash inválido"; exit 1
-fi
+create_secrets() {
+    local hash="$1"
+    kubectl create ns jenkins --dry-run=client -o yaml | kubectl apply -f -
+    kubectl -n jenkins delete secret jenkins-admin dockerhub-credentials github-ci-token dockerhub-config --ignore-not-found
+    kubectl -n jenkins create secret generic jenkins-admin \
+    --from-literal=jenkins-admin-user="$JENKINS_ADMIN_USER" \
+    --from-literal=jenkins-admin-password="$hash"
+    
+    kubectl -n jenkins create secret generic dockerhub-credentials \
+    --from-literal=username="$DOCKERHUB_USERNAME" \
+    --from-literal=password="$DOCKERHUB_TOKEN"
+    
+    kubectl -n jenkins create secret generic github-ci-token \
+    --from-literal=token="$GITHUB_TOKEN"
+    
+    mkdir -p "$HOME/.docker"
+  cat >"$HOME/.docker/config.json" <<EOF
+{"auths":{"https://index.docker.io/v1/":{"auth":"$(echo -n "$DOCKERHUB_USERNAME:$DOCKERHUB_TOKEN" | base64)"}}}
+EOF
+    kubectl -n jenkins create secret generic dockerhub-config \
+    --from-file=config.json="$HOME/.docker/config.json" \
+    --dry-run=client -o yaml | kubectl apply -f -
+}
 
-# Mostrar resultados por depuración
+render_values() {
+    envsubst < jenkins-values.template.yaml > jenkins-values.yaml
+}
+
+deploy_jenkins() {
+    helm repo add jenkins https://charts.jenkins.io >/dev/null 2>&1 || true
+    helm repo update >/dev/null
+    helm upgrade --install jenkins-local-k3d jenkins/jenkins \
+    -n jenkins -f jenkins-values.yaml --timeout 10m
+}
+
+wait_ready() {
+    echo "⏳ Esperando StatefulSet…"
+    kubectl rollout status sts/jenkins-local-k3d -n jenkins --timeout=600s
+}
+
+start_port_forward() {
+    kill_old_pf
+    kubectl -n jenkins port-forward svc/jenkins-local-k3d \
+    "$HTTP_PORT":8080 "$AGENT_PORT":50000 \
+    --address 0.0.0.0 >/dev/null 2>&1 &
+    echo "🔗 Port‑forward activo:  http://localhost:${HTTP_PORT}  (agente: ${AGENT_PORT})"
+}
+
+# ─────────────────────────────── 2. FLUJO ────────────────────────────────────
+cleanup_previous
+HASH=$(bcrypt_hash)
 echo "👤 Usuario: $JENKINS_ADMIN_USER"
-echo "🔑 Hash:    $JENKINS_ADMIN_PASSWORD_HASH"
+echo "🔑 Hash:    $HASH"
 
+export JENKINS_ADMIN_PASSWORD_HASH="$HASH"
+render_values
+create_secrets "$HASH"
+deploy_jenkins
+wait_ready
+start_port_forward
 
-# 3. Renderizar jenkins-values.yaml -------------------------------------------
-export JENKINS_ADMIN_USER JENKINS_ADMIN_PASSWORD_HASH \
-       DOCKERHUB_USERNAME DOCKERHUB_TOKEN GITHUB_TOKEN
-
-echo "📝 Renderizando jenkins-values.yaml"
-envsubst < jenkins-values.template.yaml > jenkins-values.yaml
-
-# 4. Namespace y secretos -----------------------------------------------------
-kubectl create namespace jenkins --dry-run=client -o yaml | kubectl apply -f -
-
-echo "🔐 Creando secretos..."
-kubectl -n jenkins create secret generic jenkins-admin \
-  --from-literal=jenkins-admin-user="$JENKINS_ADMIN_USER" \
-  --from-literal=jenkins-admin-password="$JENKINS_ADMIN_PASSWORD_HASH"
-
-kubectl -n jenkins create secret generic dockerhub-credentials \
-  --from-literal=username="$DOCKERHUB_USERNAME" \
-  --from-literal=password="$DOCKERHUB_TOKEN"
-
-kubectl -n jenkins create secret generic github-ci-token \
-  --from-literal=token="$GITHUB_TOKEN"
-
-# Crear dockerhub-config (auth para Kaniko)
-mkdir -p "$HOME/.docker"
-echo "{\"auths\":{\"https://index.docker.io/v1/\":{
-\"auth\":\"$(echo -n "$DOCKERHUB_USERNAME:$DOCKERHUB_TOKEN" | base64)\"}}}" \
-> "$HOME/.docker/config.json"
-
-kubectl -n jenkins create secret generic dockerhub-config \
-  --from-file=config.json="$HOME/.docker/config.json" \
-  --dry-run=client -o yaml | kubectl apply -f -
-
-# 5. Instalar Jenkins con Helm -----------------------------------------------
-helm repo add jenkins https://charts.jenkins.io >/dev/null 2>&1 || true
-helm repo update >/dev/null
-
-helm upgrade --install jenkins-local-k3d jenkins/jenkins \
-  -n jenkins -f jenkins-values.yaml --timeout 10m
-
-# 6. Esperar a que esté listo -------------------------------------------------
-echo "⏳ Esperando a que Jenkins esté listo..."
-kubectl rollout status sts/jenkins-local-k3d -n jenkins --timeout=600s
-
-# 7. Final: información y port-forward ----------------------------------------
 cat <<EOF
 
 ✅ Jenkins desplegado correctamente
 
-🌐 URL local:   http://localhost:8080
-👤 Usuario:     $JENKINS_ADMIN_USER
-🔑 Contraseña:  (la definida en tu .env)
+🌐 URL:       http://localhost:${HTTP_PORT}
+👤 Usuario:   $JENKINS_ADMIN_USER
+🔑 Contraseña: (la definida en tu .env)
 
 EOF
-
-kubectl -n jenkins port-forward svc/jenkins-local-k3d 8080:8080 >/dev/null 2>&1 &
-echo "🔗 Port-forward activo en http://localhost:8080"
