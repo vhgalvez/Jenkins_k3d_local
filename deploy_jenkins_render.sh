@@ -96,6 +96,7 @@ Contraseña:  (la definida en tu .env)
 
 EOF
 
+
 # Establecer port-forward en segundo plano para el servicio de Jenkins
 kubectl -n jenkins port-forward svc/jenkins-local-k3d 8080:8080 >/dev/null 2>&1 &
 echo "🔗 Port-forward activo en http://localhost:8080"
