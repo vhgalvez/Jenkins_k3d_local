@@ -94,6 +94,7 @@ Contraseña:  (la definida en tu .env)
 
 EOF
 
+
 # Port‑forward en background
 kubectl -n jenkins port-forward svc/jenkins-local-k3d 8080:8080 >/dev/null 2>&1 &
 echo "🔗 Port‑forward activo en http://localhost:8080"
