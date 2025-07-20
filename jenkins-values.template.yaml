@@ -9,12 +9,10 @@ controller:
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
-  # → el chart los inyecta como variables de entorno
   env:
     JENKINS_ADMIN_USER: "${JENKINS_ADMIN_USER}"
     JENKINS_ADMIN_PASSWORD_HASH: "${JENKINS_ADMIN_PASSWORD_HASH}"
 
-  # variables disponibles para otros plugins / pipelines si las necesitas
   containerEnv:
     - name: DOCKERHUB_USERNAME
       value: "${DOCKERHUB_USERNAME}"
@@ -65,12 +63,9 @@ controller:
                         env:
                           - name: DOCKER_CONFIG
                             value: /kaniko/.docker
-                        volumeMounts:
-                          - name: docker-config
-                            mountPath: /kaniko/.docker
                     volumes:
-                      - name: docker-config
-                        secret:
+                      - secretVolume:
+                          mountPath: /kaniko/.docker
                           secretName: dockerhub-config
 
         credentials:
@@ -81,11 +76,9 @@ controller:
                       id: dockerhub-credentials
                       username: "${DOCKERHUB_USERNAME}"
                       password: "${DOCKERHUB_TOKEN}"
-                      description: "DockerHub token para Kaniko"
                   - string:
                       id: github-ci-token
                       secret: "${GITHUB_TOKEN}"
-                      description: "GitHub PAT para pipelines"
 
 persistence:
   enabled: true
