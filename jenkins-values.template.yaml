@@ -1,52 +1,43 @@
-# Jenkins Helm values – plantilla para envsubst
-# Corregido para garantizar la compatibilidad de plugins.
 controller:
-  # Sección para instalar plugins específicos, evitando incompatibilidades.
-  # Estas versiones son conocidas por funcionar bien juntas.
-  installPlugins:
-    - kubernetes:4206.v2211_9329_d95c
-    - configuration-as-code:1889.v119b_9323d453
-    - workflow-aggregator:596.v802b_b_4fd69b_b
-    - git:5.2.2
-    - job-dsl:1.87
-
   image:
-    # Usar una versión LTS (Long-Term Support) es generalmente más estable para producción.
-    # Si prefieres la última semanal, 2.518-jdk21 está bien, pero LTS es recomendado.
     repository: jenkins/jenkins
-    tag: "2.452.2-jdk17"
+    tag: "2.518-jdk21"
 
   admin:
-    # Usa el secreto que creamos para las credenciales de admin
     existingSecret: jenkins-admin
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
-  # Variables de entorno que estarán disponibles en el contenedor de Jenkins
-  containerEnv:
+  env:  # Variables de entorno del controller (Jenkins admin user y hash)
+    JENKINS_ADMIN_USER: "${JENKINS_ADMIN_USER}"
+    JENKINS_ADMIN_PASSWORD_HASH: "${JENKINS_ADMIN_PASSWORD_HASH}"
+
+  containerEnv:  # Variables de entorno adicionales (credenciales externas)
     - name: DOCKERHUB_USERNAME
       value: "${DOCKERHUB_USERNAME}"
+    - name: DOCKERHUB_TOKEN
+      value: "${DOCKERHUB_TOKEN}"
     - name: GITHUB_TOKEN
       value: "${GITHUB_TOKEN}"
 
-  # Configuración de Jenkins Configuration as Code (JCasC)
   JCasC:
     enabled: true
-    defaultConfig: false # Usamos nuestra propia configuración
+    defaultConfig: false
     configScripts:
       main: |
         jenkins:
-          systemMessage: "🚀 Jenkins sobre K3s – DevOps Ready | Corregido por Asistente de Programación"
+          systemMessage: "🚀 Jenkins sobre K3d/K3s – DevOps ready"
           securityRealm:
             local:
               allowsSignup: false
+              enableCaptcha: false
               users:
                 - id: "${JENKINS_ADMIN_USER}"
-                  # Las comillas simples son cruciales aquí porque el hash bcrypt contiene '$'
                   password: '${JENKINS_ADMIN_PASSWORD_HASH}'
           authorizationStrategy:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
+
           clouds:
             - kubernetes:
                 name: "kubernetes"
@@ -55,36 +46,27 @@ controller:
                 namespace: "jenkins"
                 jenkinsUrl: "http://jenkins-local-k3d:8080"
                 jenkinsTunnel: "jenkins-local-k3d-agent:50000"
-                containerCap: 10
                 templates:
-                  - name: default-agent
-                    label: default
+                  - name: "default"
+                    label: "default"
                     idleMinutes: 1
                     containers:
-                      - name: jnlp
-                        image: jenkins/inbound-agent:3206.vb_15dcf73f6a_9-2
-                        args: '${computer.jnlpmac} ${computer.name}'
-                      - name: nodejs
-                        image: node:18-alpine
+                      - name: "nodejs"
+                        image: "node:18-alpine"
                         command: "cat"
                         ttyEnabled: true
-                      - name: kaniko
-                        # Usamos una imagen de Kaniko más reciente
-                        image: gcr.io/kaniko-project/executor:v1.12.1-debug
+                      - name: "kaniko"
+                        image: "gcr.io/kaniko-project/executor:v1.23.0-debug"
                         command: "/busybox/cat"
                         ttyEnabled: true
-                        # Montar el secreto de Docker como un volumen para Kaniko
-                        volumeMounts:
-                          - name: dockerhub-config-vol
-                            mountPath: /kaniko/.docker
-                            readOnly: true
-                    # La sintaxis de volúmenes es correcta. El problema era la versión de los plugins.
+                        env:
+                          - name: "DOCKER_CONFIG"
+                            value: "/kaniko/.docker"
                     volumes:
                       - secretVolume:
-                          secretName: dockerhub-config
-                          mountPath: /kaniko/.docker
-                          # El nombre del volumen debe ser consistente con el volumeMounts
-                          volumeName: dockerhub-config-vol
+                          secretName: "dockerhub-config"
+                          mountPath: "/kaniko/.docker"
+                          defaultMode: "400"
 
         credentials:
           system:
@@ -92,17 +74,13 @@ controller:
               - credentials:
                   - usernamePassword:
                       id: "dockerhub-credentials"
-                      scope: GLOBAL
                       username: "${DOCKERHUB_USERNAME}"
                       password: "${DOCKERHUB_TOKEN}"
-                      description: "Credenciales de DockerHub"
                   - string:
                       id: "github-ci-token"
-                      scope: GLOBAL
                       secret: "${GITHUB_TOKEN}"
-                      description: "Token de GitHub para CI"
 
 persistence:
   enabled: true
-  storageClass: "local-path" # Asegúrate que este StorageClass exista en tu clúster k3d/k3s
+  storageClass: local-path
   size: 8Gi
