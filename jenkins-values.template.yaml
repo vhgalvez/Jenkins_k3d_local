@@ -1,7 +1,4 @@
-# jenkins-values.template.yaml – Configuración completa y funcional para laboratorio k3d/k3s
-#──────────────────────────────────────────────────────────────
-#  Jenkins Helm chart – valores renderizados con envsubst
-#──────────────────────────────────────────────────────────────
+# jenkins-values.template.yaml – Helm values para Jenkins en K3d/K3s
 controller:
   image:
     repository: jenkins/jenkins
