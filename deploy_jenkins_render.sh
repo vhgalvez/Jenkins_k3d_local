@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -euo pipefailº
+
+# deploy_jenkins_render.sh
 
 ### 0. Comprobaciones #########################################################
 for c in kubectl helm python3 envsubst; do

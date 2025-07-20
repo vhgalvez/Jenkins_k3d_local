@@ -2,7 +2,6 @@
 #──────────────────────────────────────────────────────────────
 #  Jenkins Helm chart – valores renderizados con envsubst
 #──────────────────────────────────────────────────────────────
-# Plantilla – se renderiza con envsubst
 controller:
   image:
     repository: jenkins/jenkins
@@ -67,12 +66,9 @@ controller:
                         env:
                           - name: DOCKER_CONFIG
                             value: /kaniko/.docker
-                        volumeMounts:
-                          - mountPath: /kaniko/.docker
-                            name: docker-config
                     volumes:
-                      - name: docker-config
-                        secret:
+                      - secretVolume:
+                          mountPath: /kaniko/.docker
                           secretName: dockerhub-config
 
         credentials:
