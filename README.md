@@ -356,6 +356,11 @@ kubectl delete pods --all -n jenkins
  kubectl delete pod -n jenkins -l jenkins=slave
 
  
+
+ bash ./deploy_jenkins_render.sh
+
+
+
 ## 📜 Licencia
 
 

@@ -8,11 +8,11 @@ controller:
     userKey: jenkins-admin-user
     passwordKey: jenkins-admin-password
 
-  env:  # Variables de entorno del controller (Jenkins admin user y hash)
+  env:
     JENKINS_ADMIN_USER: "${JENKINS_ADMIN_USER}"
     JENKINS_ADMIN_PASSWORD_HASH: "${JENKINS_ADMIN_PASSWORD_HASH}"
 
-  containerEnv:  # Variables de entorno adicionales (credenciales externas)
+  containerEnv:
     - name: DOCKERHUB_USERNAME
       value: "${DOCKERHUB_USERNAME}"
     - name: DOCKERHUB_TOKEN
@@ -33,7 +33,7 @@ controller:
               enableCaptcha: false
               users:
                 - id: "${JENKINS_ADMIN_USER}"
-                  password: '${JENKINS_ADMIN_PASSWORD_HASH}'
+                  password: "${JENKINS_ADMIN_PASSWORD_HASH}"
           authorizationStrategy:
             loggedInUsersCanDoAnything:
               allowAnonymousRead: false
@@ -66,7 +66,7 @@ controller:
                       - secretVolume:
                           secretName: "dockerhub-config"
                           mountPath: "/kaniko/.docker"
-                          defaultMode: "400"
+                          readOnly: true
 
         credentials:
           system:
