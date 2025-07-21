@@ -62,50 +62,28 @@ controller:
                 jenkinsUrl: "http://jenkins-local-k3d:8080"
                 jenkinsTunnel: "jenkins-local-k3d-agent:50000"
                 templates:
-                  # ───── PLANTILLA POR DEFECTO ─────
                   - name: "default"
                     label: "default"
                     idleMinutes: 1
-                    containers:
-                      - name: "nodejs"
-                        image: "node:18-alpine"
-                        command: "cat"
-                        ttyEnabled: true
-                      - name: "kaniko"
-                        image: "gcr.io/kaniko-project/executor:v1.23.0-debug"
-                        command: "/busybox/cat"
-                        ttyEnabled: true
-                        envVars:
-                          - envVar:
-                              key: "DOCKER_CONFIG"
-                              value: "/kaniko/.docker"
-                    volumes:
-                      - secretVolume:
-                          secretName: "dockerhub-config"
-                          mountPath: "/kaniko/.docker"
 
-                  # ───── NUEVA PLANTILLA PARA EL PIPELINE ─────
-                  - name: "gitops-agent"
-                    label: "gitops-agent"
-                    idleMinutes: 1
                     containers:
-                      - name: "jnlp"
-                        image: "jenkins/inbound-agent:3309.v27b_9314fd1a_4-1"
-                        args: ^${computer.jnlpmac} ^${computer.name}
-                        resourceRequestCpu: "100m"
-                        resourceRequestMemory: "256Mi"
+                      # -------- Contenedor Node.js --------------------------
                       - name: "nodejs"
                         image: "node:18-alpine"
                         command: "cat"
                         ttyEnabled: true
+
+                      # -------- Contenedor Kaniko ---------------------------
                       - name: "kaniko"
                         image: "gcr.io/kaniko-project/executor:v1.23.0-debug"
                         command: "/busybox/cat"
                         ttyEnabled: true
                         envVars:
-                          - envVar:
+                          - envVar:          # 👈 Sintaxis correcta
                               key: "DOCKER_CONFIG"
                               value: "/kaniko/.docker"
+
+                    # ---- Volumen secreto con credenciales DockerHub --------
                     volumes:
                       - secretVolume:
                           secretName: "dockerhub-config"
